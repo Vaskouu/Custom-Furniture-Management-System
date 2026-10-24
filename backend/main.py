@@ -20,6 +20,17 @@ class CustomerUpdate(BaseModel):
     phone: str = Field(min_length=7, max_length=20)
     email: str = Field(min_length=5, max_length=100)
 
+class OrderCreate(BaseModel):
+    customer_id: int = Field(gt=0)
+    furniture_type: str = Field(min_length=2, max_length=100)
+    description: str | None = None
+
+class OrderUpdate(BaseModel):
+    customer_id: int = Field(gt=0)
+    furniture_type: str = Field(min_length=2, max_length=100)
+    description: str | None = None
+    status: str = Field(min_length=2, max_length=50)
+
 
 @app.get("/")
 def home():
@@ -198,6 +209,8 @@ def update_customer(customer_id: int, customer: CustomerUpdate):
         )
 
 
+
+
 @app.delete("/customers/{customer_id}")
 def delete_customer(customer_id: int):
     try:
@@ -229,4 +242,192 @@ def delete_customer(customer_id: int):
         raise HTTPException(
             status_code=500,
             detail="Failed to delete customer"
+        )
+
+
+
+
+@app.post("/orders", status_code=201)        
+def create_order(order: OrderCreate):
+    try:
+        with engine.begin() as connection:
+            customer = connection.execute(
+                text("SELECT id FROM customers WHERE id = :customer_id"),
+                {"customer_id": order.customer_id}
+            ).first()
+
+            if customer is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail="Customer not found"
+                )
+
+            result = connection.execute(
+                text("""
+                    INSERT INTO orders (
+                        customer_id,
+                        furniture_type,
+                        description
+                    )
+                    VALUES (
+                        :customer_id,
+                        :furniture_type,
+                        :description
+                    )
+                    RETURNING
+                        id,
+                        customer_id,
+                        furniture_type,
+                        description,
+                        status,
+                        created_at
+                """),
+                {
+                    "customer_id": order.customer_id,
+                    "furniture_type": order.furniture_type,
+                    "description": order.description
+                }
+            )
+
+            return dict(result.mappings().one())
+
+    except SQLAlchemyError as error:
+        print("DATABASE ERROR:", error)
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to create order"
+        )
+
+
+@app.get("/orders/{order_id}")
+def get_order_by_id(order_id: int):
+    try:
+        with engine.connect() as connection:
+            result = connection.execute(
+                text("""
+                    SELECT
+                        o.id,
+                        o.customer_id,
+                        c.name AS customer,
+                        o.furniture_type,
+                        o.description,
+                        o.status,
+                        o.created_at
+                    FROM orders AS o
+                    JOIN customers AS c ON o.customer_id = c.id
+                    WHERE o.id = :order_id
+                """),
+                {"order_id": order_id}
+            )
+
+            order = result.mappings().first()
+
+            if order is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail="Order not found"
+                )
+
+            return dict(order)
+
+    except SQLAlchemyError as error:
+        print("DATABASE ERROR:", error)
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to retrieve order"
+        )
+
+@app.put("/orders/{order_id}")
+def update_order(order_id: int, order: OrderUpdate):
+    try:
+        with engine.begin() as connection:
+            customer = connection.execute(
+                text("""
+                    SELECT id
+                    FROM customers
+                    WHERE id = :customer_id
+                """),
+                {"customer_id": order.customer_id}
+            ).first()
+
+            if customer is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail="Customer not found"
+                )
+
+            result = connection.execute(
+                text("""
+                    UPDATE orders
+                    SET
+                        customer_id = :customer_id,
+                        furniture_type = :furniture_type,
+                        description = :description,
+                        status = :status
+                    WHERE id = :order_id
+                    RETURNING
+                        id,
+                        customer_id,
+                        furniture_type,
+                        description,
+                        status,
+                        created_at
+                """),
+                {
+                    "order_id": order_id,
+                    "customer_id": order.customer_id,
+                    "furniture_type": order.furniture_type,
+                    "description": order.description,
+                    "status": order.status
+                }
+            )
+
+            updated_order = result.mappings().first()
+
+            if updated_order is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail="Order not found"
+                )
+
+            return dict(updated_order)
+
+    except SQLAlchemyError as error:
+        print("DATABASE ERROR:", error)
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to update order"
+        )
+
+@app.delete("/orders/{order_id}")
+def delete_order(order_id: int):
+    try:
+        with engine.begin() as connection:
+            result = connection.execute(
+                text("""
+                    DELETE FROM orders
+                    WHERE id = :order_id
+                    RETURNING id
+                """),
+                {"order_id": order_id}
+            )
+
+            deleted_order = result.mappings().first()
+
+            if deleted_order is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail="Order not found"
+                )
+
+            return {
+                "message": "Order deleted successfully",
+                "id": deleted_order["id"]
+            }
+
+    except SQLAlchemyError as error:
+        print("DATABASE ERROR:", error)
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to delete order"
         )
