@@ -398,3 +398,36 @@ def update_order(order_id: int, order: OrderUpdate):
             status_code=500,
             detail="Failed to update order"
         )
+
+@app.delete("/orders/{order_id}")
+def delete_order(order_id: int):
+    try:
+        with engine.begin() as connection:
+            result = connection.execute(
+                text("""
+                    DELETE FROM orders
+                    WHERE id = :order_id
+                    RETURNING id
+                """),
+                {"order_id": order_id}
+            )
+
+            deleted_order = result.mappings().first()
+
+            if deleted_order is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail="Order not found"
+                )
+
+            return {
+                "message": "Order deleted successfully",
+                "id": deleted_order["id"]
+            }
+
+    except SQLAlchemyError as error:
+        print("DATABASE ERROR:", error)
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to delete order"
+        )
