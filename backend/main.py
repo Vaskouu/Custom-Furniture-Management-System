@@ -20,6 +20,11 @@ class CustomerUpdate(BaseModel):
     phone: str = Field(min_length=7, max_length=20)
     email: str = Field(min_length=5, max_length=100)
 
+class OrderCreate(BaseModel):
+    customer_id: int = Field(gt=0)
+    furniture_type: str = Field(min_length=2, max_length=100)
+    description: str | None = None
+
 
 @app.get("/")
 def home():
@@ -198,6 +203,8 @@ def update_customer(customer_id: int, customer: CustomerUpdate):
         )
 
 
+
+
 @app.delete("/customers/{customer_id}")
 def delete_customer(customer_id: int):
     try:
@@ -229,4 +236,58 @@ def delete_customer(customer_id: int):
         raise HTTPException(
             status_code=500,
             detail="Failed to delete customer"
+        )
+
+
+
+
+@app.post("/orders", status_code=201)        
+def create_order(order: OrderCreate):
+    try:
+        with engine.begin() as connection:
+            customer = connection.execute(
+                text("SELECT id FROM customers WHERE id = :customer_id"),
+                {"customer_id": order.customer_id}
+            ).first()
+
+            if customer is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail="Customer not found"
+                )
+
+            result = connection.execute(
+                text("""
+                    INSERT INTO orders (
+                        customer_id,
+                        furniture_type,
+                        description
+                    )
+                    VALUES (
+                        :customer_id,
+                        :furniture_type,
+                        :description
+                    )
+                    RETURNING
+                        id,
+                        customer_id,
+                        furniture_type,
+                        description,
+                        status,
+                        created_at
+                """),
+                {
+                    "customer_id": order.customer_id,
+                    "furniture_type": order.furniture_type,
+                    "description": order.description
+                }
+            )
+
+            return dict(result.mappings().one())
+
+    except SQLAlchemyError as error:
+        print("DATABASE ERROR:", error)
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to create order"
         )
