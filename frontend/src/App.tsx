@@ -1,11 +1,42 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import './App.css'
 
 type Page = 'dashboard' | 'customers' | 'orders'
 
+type Customer = {
+  id: number
+  name: string
+  phone: string
+  email: string
+}
+
 function App() {
   const [activePage, setActivePage] = useState<Page>('dashboard')
 
+const [customers, setCustomers] = useState<Customer[]>([])
+const [loading, setLoading] = useState(true)
+const [error, setError] = useState('')
+
+useEffect(() => {
+  async function loadCustomers() {
+    try {
+      const response = await fetch('http://127.0.0.1:8000/customers')
+
+      if (!response.ok) {
+        throw new Error('Неуспешно зареждане на клиентите.')
+      }
+
+      const data: Customer[] = await response.json()
+      setCustomers(data)
+    } catch {
+      setError('Неуспешна връзка с FastAPI.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  loadCustomers()
+}, [])
   return (
     <div className="app">
       <aside className="sidebar">
@@ -81,21 +112,30 @@ function App() {
           </tr>
         </thead>
 
-        <tbody>
-          <tr>
-            <td>1</td>
-            <td>Иван Петров</td>
-            <td>0888123456</td>
-            <td>ivan@example.com</td>
-          </tr>
-
-          <tr>
-            <td>2</td>
-            <td>Мария Георгиева</td>
-            <td>0888987654</td>
-            <td>maria@example.com</td>
-          </tr>
-        </tbody>
+<tbody>
+  {loading ? (
+    <tr>
+      <td colSpan={4}>Зареждане на клиентите...</td>
+    </tr>
+  ) : error ? (
+    <tr>
+      <td colSpan={4}>{error}</td>
+    </tr>
+  ) : customers.length === 0 ? (
+    <tr>
+      <td colSpan={4}>Няма добавени клиенти.</td>
+    </tr>
+  ) : (
+    customers.map((customer) => (
+      <tr key={customer.id}>
+        <td>{customer.id}</td>
+        <td>{customer.name}</td>
+        <td>{customer.phone}</td>
+        <td>{customer.email}</td>
+      </tr>
+    ))
+  )}
+</tbody>
       </table>
     </div>
   </section>
