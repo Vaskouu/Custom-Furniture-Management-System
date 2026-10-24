@@ -15,6 +15,12 @@ class CustomerCreate(BaseModel):
     email: str = Field(min_length=5, max_length=255)
 
 
+class CustomerUpdate(BaseModel):
+    name: str = Field(min_length=2, max_length=100)
+    phone: str = Field(min_length=7, max_length=20)
+    email: str = Field(min_length=5, max_length=100)
+
+
 @app.get("/")
 def home():
     return {"message": "FurniPro API is working!"}
@@ -151,4 +157,76 @@ def get_customer_by_id(customer_id: int):
         raise HTTPException(
             status_code=500,
             detail="Failed to retrieve customer"
+        )
+
+@app.put("/customers/{customer_id}")
+def update_customer(customer_id: int, customer: CustomerUpdate):
+    try:
+        with engine.begin() as connection:
+            result = connection.execute(
+                text("""
+                    UPDATE customers
+                    SET name = :name,
+                        phone = :phone,
+                        email = :email
+                    WHERE id = :customer_id
+                    RETURNING id, name, phone, email
+                """),
+                {
+                    "customer_id": customer_id,
+                    "name": customer.name,
+                    "phone": customer.phone,
+                    "email": customer.email
+                }
+            )
+
+            updated_customer = result.mappings().first()
+
+            if updated_customer is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail="Customer not found"
+                )
+
+            return dict(updated_customer)
+
+    except SQLAlchemyError as error:
+        print("DATABASE ERROR:", error)
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to update customer"
+        )
+
+
+@app.delete("/customers/{customer_id}")
+def delete_customer(customer_id: int):
+    try:
+        with engine.begin() as connection:
+            result = connection.execute(
+                text("""
+                    DELETE FROM customers
+                    WHERE id = :customer_id
+                    RETURNING id
+                """),
+                {"customer_id": customer_id}
+            )
+
+            deleted_customer = result.mappings().first()
+
+            if deleted_customer is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail="Customer not found"
+                )
+
+            return {
+                "message": "Customer deleted successfully",
+                "id": deleted_customer["id"]
+            }
+
+    except SQLAlchemyError as error:
+        print("DATABASE ERROR:", error)
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to delete customer"
         )
