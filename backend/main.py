@@ -196,3 +196,37 @@ def update_customer(customer_id: int, customer: CustomerUpdate):
             status_code=500,
             detail="Failed to update customer"
         )
+
+
+@app.delete("/customers/{customer_id}")
+def delete_customer(customer_id: int):
+    try:
+        with engine.begin() as connection:
+            result = connection.execute(
+                text("""
+                    DELETE FROM customers
+                    WHERE id = :customer_id
+                    RETURNING id
+                """),
+                {"customer_id": customer_id}
+            )
+
+            deleted_customer = result.mappings().first()
+
+            if deleted_customer is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail="Customer not found"
+                )
+
+            return {
+                "message": "Customer deleted successfully",
+                "id": deleted_customer["id"]
+            }
+
+    except SQLAlchemyError as error:
+        print("DATABASE ERROR:", error)
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to delete customer"
+        )
