@@ -1,10 +1,14 @@
 from fastapi import FastAPI, HTTPException
-from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
+from pydantic import BaseModel, Field
+from sqlalchemy import text
 from database import engine
 
 app = FastAPI(title="FurniPro API")
-
+class CustomerCreate(BaseModel):
+    name: str = Field(min_length=2, max_length=100)
+    phone: str = Field(min_length=7, max_length=20)
+    email: str = Field(min_length=5, max_length=255)
 
 @app.get("/")
 def home():
@@ -33,7 +37,7 @@ def health_check():
                 "database": "disconnected"
             }
         )
-        
+
 @app.get("/customers")
 def get_customers():
     try:
@@ -76,4 +80,30 @@ def get_orders():
         raise HTTPException(
             status_code=500,
             detail="Database query failed"
+        )
+
+@app.post("/customers", status_code=201)
+def create_customer(customer: CustomerCreate):
+    try:
+        with engine.begin() as connection:
+            result = connection.execute(
+                text("""
+                    INSERT INTO customers (name, phone, email)
+                    VALUES (:name, :phone, :email)
+                    RETURNING id, name, phone, email
+                """),
+                {
+                    "name": customer.name,
+                    "phone": customer.phone,
+                    "email": customer.email
+                }
+            )
+
+            return dict(result.mappings().one())
+
+    except SQLAlchemyError as error:
+        print("DATABASE ERROR:", error)
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to create customer"
         )
