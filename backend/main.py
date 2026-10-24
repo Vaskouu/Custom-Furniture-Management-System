@@ -291,3 +291,42 @@ def create_order(order: OrderCreate):
             status_code=500,
             detail="Failed to create order"
         )
+
+
+@app.get("/orders/{order_id}")
+def get_order_by_id(order_id: int):
+    try:
+        with engine.connect() as connection:
+            result = connection.execute(
+                text("""
+                    SELECT
+                        o.id,
+                        o.customer_id,
+                        c.name AS customer,
+                        o.furniture_type,
+                        o.description,
+                        o.status,
+                        o.created_at
+                    FROM orders AS o
+                    JOIN customers AS c ON o.customer_id = c.id
+                    WHERE o.id = :order_id
+                """),
+                {"order_id": order_id}
+            )
+
+            order = result.mappings().first()
+
+            if order is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail="Order not found"
+                )
+
+            return dict(order)
+
+    except SQLAlchemyError as error:
+        print("DATABASE ERROR:", error)
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to retrieve order"
+        )
