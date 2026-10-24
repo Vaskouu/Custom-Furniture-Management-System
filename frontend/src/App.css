@@ -109,3 +109,23 @@ header p {
 .customers-table tbody tr:last-child td {
   border-bottom: none;
 }
+.status-badge {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 20px;
+  background: #e2e8f0;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.status-new {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.status-progress {
+  background: #fef3c7;
+  color: #92400e;
+}
