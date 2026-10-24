@@ -63,19 +63,43 @@ function App() {
           </>
         )}
 
-        {activePage === 'customers' && (
-          <header>
-            <h2>Клиенти</h2>
-            <p>Тук ще управляваме клиентите на мебелното студио.</p>
-          </header>
-        )}
+{activePage === 'customers' && (
+  <section className="customers-page">
+    <header>
+      <h2>Клиенти</h2>
+      <p>Списък с клиентите на мебелното студио.</p>
+    </header>
 
-        {activePage === 'orders' && (
-          <header>
-            <h2>Поръчки</h2>
-            <p>Тук ще управляваме поръчките за мебели.</p>
-          </header>
-        )}
+    <div className="table-container">
+      <table className="customers-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Име</th>
+            <th>Телефон</th>
+            <th>Имейл</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr>
+            <td>1</td>
+            <td>Иван Петров</td>
+            <td>0888123456</td>
+            <td>ivan@example.com</td>
+          </tr>
+
+          <tr>
+            <td>2</td>
+            <td>Мария Георгиева</td>
+            <td>0888987654</td>
+            <td>maria@example.com</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+)}
       </main>
     </div>
   )

@@ -76,6 +76,36 @@ header p {
 .card p {
   color: #64748b;
 }
-body {
-  background: red !important;
+.table-container {
+  margin-top: 30px;
+  background: white;
+  border-radius: 12px;
+  overflow-x: auto;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.customers-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.customers-table th,
+.customers-table td {
+  padding: 18px 22px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.customers-table th {
+  background: #f8fafc;
+  color: #475569;
+  font-size: 14px;
+}
+
+.customers-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.customers-table tbody tr:last-child td {
+  border-bottom: none;
 }
