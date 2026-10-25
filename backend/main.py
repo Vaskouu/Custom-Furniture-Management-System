@@ -43,13 +43,15 @@ class OrderUpdate(BaseModel):
 
 class OrderMaterialCreate(BaseModel):
     order_id: int = Field(gt=0)
-    material_name: str = Field(min_length=2, max_length=100)
+    material_id: int = Field(gt=0)
     quantity: float = Field(gt=0)
+
 
 class OrderMaterialUpdate(BaseModel):
     order_id: int = Field(gt=0)
-    material_name: str = Field(min_length=2, max_length=100)
+    material_id: int = Field(gt=0)
     quantity: float = Field(gt=0)
+
 
 @app.get("/")
 def home():
@@ -451,37 +453,46 @@ def delete_order(order_id: int):
             detail="Failed to delete order"
         )
 
+@app.get("/materials")
+def get_materials():
+    try:
+        with engine.connect() as connection:
+            result = connection.execute(text("""
+                SELECT id, name, unit, price_per_unit
+                FROM materials
+                ORDER BY id
+            """))
+            return [dict(row) for row in result.mappings()]
+    except SQLAlchemyError as error:
+        print("DATABASE ERROR:", error)
+        raise HTTPException(status_code=500, detail="Failed to retrieve materials")
+
+
 @app.get("/order-materials")
 def get_order_materials():
     try:
         with engine.connect() as connection:
-            result = connection.execute(
-                text("""
-                    SELECT
-                        m.id,
-                        m.order_id,
-                        c.name AS customer,
-                        o.furniture_type,
-                        m.material_name,
-                        m.quantity
-                    FROM order_materials AS m
-                    JOIN orders AS o
-                        ON m.order_id = o.id
-                    JOIN customers AS c
-                        ON o.customer_id = c.id
-                    ORDER BY m.id
-                """)
-            )
-
+            result = connection.execute(text("""
+                SELECT
+                    om.id,
+                    om.order_id,
+                    om.material_id,
+                    c.name AS customer,
+                    o.furniture_type,
+                    m.name AS material_name,
+                    m.unit,
+                    m.price_per_unit,
+                    om.quantity
+                FROM order_materials AS om
+                JOIN orders AS o ON om.order_id = o.id
+                JOIN customers AS c ON o.customer_id = c.id
+                JOIN materials AS m ON om.material_id = m.id
+                ORDER BY om.id
+            """))
             return [dict(row) for row in result.mappings()]
-
     except SQLAlchemyError as error:
         print("DATABASE ERROR:", error)
-
-        raise HTTPException(
-            status_code=500,
-            detail="Failed to retrieve order materials"
-        )
+        raise HTTPException(status_code=500, detail="Failed to retrieve order materials")
 
 
 @app.post("/order-materials", status_code=201)
@@ -492,134 +503,91 @@ def create_order_material(material: OrderMaterialCreate):
                 text("SELECT id FROM orders WHERE id = :order_id"),
                 {"order_id": material.order_id}
             ).first()
-
             if order_exists is None:
-                raise HTTPException(
-                    status_code=404,
-                    detail="Order not found"
-                )
+                raise HTTPException(status_code=404, detail="Order not found")
 
-            result = connection.execute(
-                text("""
-                    INSERT INTO order_materials (
-                        order_id,
-                        material_name,
-                        quantity
-                    )
-                    VALUES (
-                        :order_id,
-                        :material_name,
-                        :quantity
-                    )
-                    RETURNING id, order_id, material_name, quantity
-                """),
-                {
-                    "order_id": material.order_id,
-                    "material_name": material.material_name,
-                    "quantity": material.quantity
-                }
-            )
+            material_row = connection.execute(
+                text("SELECT name FROM materials WHERE id = :material_id"),
+                {"material_id": material.material_id}
+            ).mappings().first()
+            if material_row is None:
+                raise HTTPException(status_code=404, detail="Material not found")
 
+            result = connection.execute(text("""
+                INSERT INTO order_materials
+                    (order_id, material_id, material_name, quantity)
+                VALUES (:order_id, :material_id, :material_name, :quantity)
+                RETURNING id, order_id, material_id, material_name, quantity
+            """), {
+                "order_id": material.order_id,
+                "material_id": material.material_id,
+                "material_name": material_row["name"],
+                "quantity": material.quantity
+            })
             return dict(result.mappings().one())
-
     except SQLAlchemyError as error:
         print("DATABASE ERROR:", error)
-
-        raise HTTPException(
-            status_code=500,
-            detail="Failed to create order material"
-        )
+        raise HTTPException(status_code=500, detail="Failed to create order material")
 
 
 @app.put("/order-materials/{material_id}")
-def update_order_material(
-    material_id: int,
-    material: OrderMaterialUpdate
-):
+def update_order_material(material_id: int, material: OrderMaterialUpdate):
     try:
         with engine.begin() as connection:
             order_exists = connection.execute(
                 text("SELECT id FROM orders WHERE id = :order_id"),
                 {"order_id": material.order_id}
             ).first()
-
             if order_exists is None:
-                raise HTTPException(
-                    status_code=404,
-                    detail="Order not found"
-                )
+                raise HTTPException(status_code=404, detail="Order not found")
 
-            result = connection.execute(
-                text("""
-                    UPDATE order_materials
-                    SET
-                        order_id = :order_id,
-                        material_name = :material_name,
-                        quantity = :quantity
-                    WHERE id = :material_id
-                    RETURNING
-                        id,
-                        order_id,
-                        material_name,
-                        quantity
-                """),
-                {
-                    "material_id": material_id,
-                    "order_id": material.order_id,
-                    "material_name": material.material_name,
-                    "quantity": material.quantity
-                }
-            )
+            material_row = connection.execute(
+                text("SELECT name FROM materials WHERE id = :material_id"),
+                {"material_id": material.material_id}
+            ).mappings().first()
+            if material_row is None:
+                raise HTTPException(status_code=404, detail="Material not found")
 
-            updated_material = result.mappings().first()
-
-            if updated_material is None:
-                raise HTTPException(
-                    status_code=404,
-                    detail="Order material not found"
-                )
-
-            return dict(updated_material)
-
+            result = connection.execute(text("""
+                UPDATE order_materials
+                SET order_id = :order_id,
+                    material_id = :new_material_id,
+                    material_name = :material_name,
+                    quantity = :quantity
+                WHERE id = :row_id
+                RETURNING id, order_id, material_id, material_name, quantity
+            """), {
+                "row_id": material_id,
+                "order_id": material.order_id,
+                "new_material_id": material.material_id,
+                "material_name": material_row["name"],
+                "quantity": material.quantity
+            })
+            updated = result.mappings().first()
+            if updated is None:
+                raise HTTPException(status_code=404, detail="Order material not found")
+            return dict(updated)
     except SQLAlchemyError as error:
         print("DATABASE ERROR:", error)
-
-        raise HTTPException(
-            status_code=500,
-            detail="Failed to update order material"
-        )
+        raise HTTPException(status_code=500, detail="Failed to update order material")
 
 
 @app.delete("/order-materials/{material_id}")
 def delete_order_material(material_id: int):
     try:
         with engine.begin() as connection:
-            result = connection.execute(
-                text("""
-                    DELETE FROM order_materials
-                    WHERE id = :material_id
-                    RETURNING id
-                """),
-                {"material_id": material_id}
-            )
-
-            deleted_material = result.mappings().first()
-
-            if deleted_material is None:
-                raise HTTPException(
-                    status_code=404,
-                    detail="Order material not found"
-                )
-
+            result = connection.execute(text("""
+                DELETE FROM order_materials
+                WHERE id = :material_id
+                RETURNING id
+            """), {"material_id": material_id})
+            deleted = result.mappings().first()
+            if deleted is None:
+                raise HTTPException(status_code=404, detail="Order material not found")
             return {
                 "message": "Order material deleted successfully",
-                "deleted_id": deleted_material["id"]
+                "deleted_id": deleted["id"]
             }
-
     except SQLAlchemyError as error:
         print("DATABASE ERROR:", error)
-
-        raise HTTPException(
-            status_code=500,
-            detail="Failed to delete order material"
-        )
+        raise HTTPException(status_code=500, detail="Failed to delete order material")
