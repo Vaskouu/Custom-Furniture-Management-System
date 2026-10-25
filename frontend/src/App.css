@@ -238,3 +238,88 @@ header p {
 .sidebar button:hover {
   background: #b94a48;
 }
+
+/* ===== CUSTOMER CRUD ===== */
+
+.customers-page button {
+  padding: 9px 15px;
+  border: none;
+  border-radius: 7px;
+  background: #34445d;
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.customers-page button:hover {
+  background: #26354c;
+}
+
+.customers-page button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.customers-table td button {
+  margin-right: 8px;
+  padding: 7px 12px;
+}
+
+.customers-table td button:last-child {
+  background: #b94a48;
+}
+
+.customers-table td button:last-child:hover {
+  background: #963a38;
+}
+
+/* ===== CUSTOMER FORM ===== */
+
+.customer-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 480px;
+  padding: 25px;
+  margin: 20px 0;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
+.customer-form h3 {
+  margin: 0 0 10px;
+  font-size: 22px;
+}
+
+.customer-form label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #34445d;
+}
+
+.customer-form input {
+  padding: 12px;
+  border: 1px solid #d5dce5;
+  border-radius: 7px;
+  font-size: 15px;
+}
+
+.customer-form input:focus {
+  outline: none;
+  border-color: #34445d;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.form-error {
+  color: #b42318;
+  font-size: 14px;
+}

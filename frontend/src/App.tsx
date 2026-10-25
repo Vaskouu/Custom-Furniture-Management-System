@@ -1,15 +1,11 @@
 import { useEffect, useState } from 'react'
 import Login, { type User } from './components/Login'
+import CustomerForm, { type CustomerData } from './components/CustomerForm'
 import './App.css'
 
 type Page = 'dashboard' | 'customers' | 'orders'
 
-type Customer = {
-  id: number
-  name: string
-  phone: string
-  email: string
-}
+type Customer = CustomerData & { id: number }
 
 type Order = {
   id: number
@@ -29,6 +25,10 @@ function App() {
   const [customers, setCustomers] = useState<Customer[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [customerActionError, setCustomerActionError] = useState('')
+  const [showCustomerForm, setShowCustomerForm] = useState(false)
+  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null)
+  const [deletingCustomerId, setDeletingCustomerId] = useState<number | null>(null)
 
   const [orders, setOrders] = useState<Order[]>([])
   const [ordersLoading, setOrdersLoading] = useState(false)
@@ -49,7 +49,28 @@ function App() {
     setOrders([])
     setError('')
     setOrdersError('')
+    setCustomerActionError('')
+    setShowCustomerForm(false)
+    setEditingCustomer(null)
+    setDeletingCustomerId(null)
     setActivePage('dashboard')
+  }
+
+  async function fetchCustomers(accessToken: string, signal?: AbortSignal) {
+    const response = await fetch(`${API_URL}/customers`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      signal,
+    })
+
+    if (!response.ok) {
+      throw new Error(
+        response.status === 401 || response.status === 403
+          ? 'Нямате достъп до клиентите. Влезте отново или проверете ролята си.'
+          : 'Неуспешно зареждане на клиентите.'
+      )
+    }
+
+    return (await response.json()) as Customer[]
   }
 
   useEffect(() => {
@@ -62,20 +83,7 @@ function App() {
       setError('')
 
       try {
-        const response = await fetch(`${API_URL}/customers`, {
-          headers: { Authorization: `Bearer ${token}` },
-          signal: controller.signal,
-        })
-
-        if (!response.ok) {
-          throw new Error(
-            response.status === 401 || response.status === 403
-              ? 'Нямате достъп до клиентите. Влезте отново или проверете ролята си.'
-              : 'Неуспешно зареждане на клиентите.'
-          )
-        }
-
-        const data: Customer[] = await response.json()
+        const data = await fetchCustomers(token!, controller.signal)
         if (!controller.signal.aborted) setCustomers(data)
       } catch (err) {
         if (!controller.signal.aborted) {
@@ -127,6 +135,97 @@ function App() {
     void loadOrders()
     return () => controller.abort()
   }, [token, isStaff])
+
+  function openAddCustomer() {
+    setEditingCustomer(null)
+    setCustomerActionError('')
+    setShowCustomerForm(true)
+  }
+
+  function openEditCustomer(customer: Customer) {
+    setEditingCustomer(customer)
+    setCustomerActionError('')
+    setShowCustomerForm(true)
+  }
+
+  function closeCustomerForm() {
+    setShowCustomerForm(false)
+    setEditingCustomer(null)
+  }
+
+  async function saveCustomer(data: CustomerData) {
+    if (!token || !isStaff) throw new Error('Необходим е служебен достъп.')
+
+    const editingId = editingCustomer?.id
+    const response = await fetch(
+      editingId === undefined
+        ? `${API_URL}/customers`
+        : `${API_URL}/customers/${editingId}`,
+      {
+        method: editingId === undefined ? 'POST' : 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      }
+    )
+
+    if (!response.ok) {
+      throw new Error(
+        response.status === 401 || response.status === 403
+          ? 'Нямате право да променяте клиенти. Влезте отново.'
+          : response.status === 422
+            ? 'Проверете въведените данни за клиента.'
+            : 'Неуспешно запазване на клиента.'
+      )
+    }
+
+    const savedCustomer = (await response.json()) as Customer
+    setCustomers((previous) =>
+      editingId === undefined
+        ? [...previous, savedCustomer]
+        : previous.map((customer) =>
+            customer.id === editingId ? savedCustomer : customer
+          )
+    )
+    setError('')
+    setCustomerActionError('')
+    closeCustomerForm()
+  }
+
+  async function deleteCustomer(customer: Customer) {
+    if (!token || !isStaff || deletingCustomerId !== null) return
+    if (!window.confirm(`Сигурни ли сте, че искате да изтриете ${customer.name}?`)) return
+
+    setDeletingCustomerId(customer.id)
+    setCustomerActionError('')
+
+    try {
+      const response = await fetch(`${API_URL}/customers/${customer.id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+
+      if (!response.ok) {
+        throw new Error(
+          response.status === 401 || response.status === 403
+            ? 'Нямате право да изтривате клиенти. Влезте отново.'
+            : response.status === 409 || response.status === 400
+              ? 'Клиентът не може да бъде изтрит, вероятно има свързани поръчки.'
+              : 'Неуспешно изтриване. Възможно е клиентът да има свързани поръчки.'
+        )
+      }
+
+      setCustomers((previous) => previous.filter((item) => item.id !== customer.id))
+    } catch (err) {
+      setCustomerActionError(
+        err instanceof Error ? err.message : 'Неуспешна връзка с FastAPI.'
+      )
+    } finally {
+      setDeletingCustomerId(null)
+    }
+  }
 
   if (!token || !user) {
     return <Login onLogin={handleLogin} />
@@ -207,6 +306,27 @@ function App() {
               <p>Списък с клиентите на мебелното студио.</p>
             </header>
 
+            <div style={{ marginBottom: '16px' }}>
+              <button type="button" onClick={openAddCustomer} disabled={showCustomerForm}>
+                + Добави клиент
+              </button>
+            </div>
+
+            {showCustomerForm && (
+              <div style={{ marginBottom: '24px' }}>
+                <CustomerForm
+                  key={editingCustomer?.id ?? 'new'}
+                  initialData={editingCustomer ?? undefined}
+                  onSave={saveCustomer}
+                  onCancel={closeCustomerForm}
+                />
+              </div>
+            )}
+
+            {customerActionError && (
+              <p role="alert" style={{ color: '#b42318' }}>{customerActionError}</p>
+            )}
+
             <div className="table-container">
               <table className="customers-table">
                 <thead>
@@ -215,15 +335,16 @@ function App() {
                     <th>Име</th>
                     <th>Телефон</th>
                     <th>Имейл</th>
+                    <th>Действия</th>
                   </tr>
                 </thead>
                 <tbody>
                   {loading ? (
-                    <tr><td colSpan={4}>Зареждане на клиентите...</td></tr>
+                    <tr><td colSpan={5}>Зареждане на клиентите...</td></tr>
                   ) : error ? (
-                    <tr><td colSpan={4}>{error}</td></tr>
+                    <tr><td colSpan={5}>{error}</td></tr>
                   ) : customers.length === 0 ? (
-                    <tr><td colSpan={4}>Няма добавени клиенти.</td></tr>
+                    <tr><td colSpan={5}>Няма добавени клиенти.</td></tr>
                   ) : (
                     customers.map((customer) => (
                       <tr key={customer.id}>
@@ -231,6 +352,23 @@ function App() {
                         <td>{customer.name}</td>
                         <td>{customer.phone}</td>
                         <td>{customer.email}</td>
+                        <td>
+                          <button
+                            type="button"
+                            onClick={() => openEditCustomer(customer)}
+                            disabled={deletingCustomerId !== null}
+                            style={{ marginRight: '8px' }}
+                          >
+                            Редактирай
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void deleteCustomer(customer)}
+                            disabled={deletingCustomerId !== null}
+                          >
+                            {deletingCustomerId === customer.id ? 'Изтриване...' : 'Изтрий'}
+                          </button>
+                        </td>
                       </tr>
                     ))
                   )}
