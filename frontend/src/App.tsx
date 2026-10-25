@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import Login, { type User } from './components/Login'
 import CustomerForm, { type CustomerData } from './components/CustomerForm'
+import OrderForm, { type OrderData } from './components/OrderForm'
 import './App.css'
 
 type Page = 'dashboard' | 'customers' | 'orders'
@@ -13,6 +14,7 @@ type Order = {
   furniture_type: string
   description: string | null
   status: string
+  customer_id?: number
 }
 
 const API_URL = 'http://127.0.0.1:8000'
@@ -33,6 +35,12 @@ function App() {
   const [orders, setOrders] = useState<Order[]>([])
   const [ordersLoading, setOrdersLoading] = useState(false)
   const [ordersError, setOrdersError] = useState('')
+  const [orderActionError, setOrderActionError] = useState('')
+  const [showOrderForm, setShowOrderForm] = useState(false)
+  const [editingOrder, setEditingOrder] = useState<OrderData | null>(null)
+  const [editingOrderId, setEditingOrderId] = useState<number | null>(null)
+  const [loadingOrderId, setLoadingOrderId] = useState<number | null>(null)
+  const [deletingOrderId, setDeletingOrderId] = useState<number | null>(null)
 
   const isStaff = user?.role === 'admin' || user?.role === 'designer'
 
@@ -53,6 +61,12 @@ function App() {
     setShowCustomerForm(false)
     setEditingCustomer(null)
     setDeletingCustomerId(null)
+    setOrderActionError('')
+    setShowOrderForm(false)
+    setEditingOrder(null)
+    setEditingOrderId(null)
+    setLoadingOrderId(null)
+    setDeletingOrderId(null)
     setActivePage('dashboard')
   }
 
@@ -98,30 +112,29 @@ function App() {
     return () => controller.abort()
   }, [token, isStaff])
 
+  async function fetchOrders(accessToken: string, signal?: AbortSignal) {
+    const response = await fetch(`${API_URL}/orders`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      signal,
+    })
+    if (!response.ok) {
+      throw new Error(
+        response.status === 401 || response.status === 403
+          ? 'Нямате достъп до поръчките. Влезте отново или проверете ролята си.'
+          : 'Неуспешно зареждане на поръчките.'
+      )
+    }
+    return (await response.json()) as Order[]
+  }
+
   useEffect(() => {
     if (!token || !isStaff) return
-
     const controller = new AbortController()
-
     async function loadOrders() {
       setOrdersLoading(true)
       setOrdersError('')
-
       try {
-        const response = await fetch(`${API_URL}/orders`, {
-          headers: { Authorization: `Bearer ${token}` },
-          signal: controller.signal,
-        })
-
-        if (!response.ok) {
-          throw new Error(
-            response.status === 401 || response.status === 403
-              ? 'Нямате достъп до поръчките. Влезте отново или проверете ролята си.'
-              : 'Неуспешно зареждане на поръчките.'
-          )
-        }
-
-        const data: Order[] = await response.json()
+        const data = await fetchOrders(token!, controller.signal)
         if (!controller.signal.aborted) setOrders(data)
       } catch (err) {
         if (!controller.signal.aborted) {
@@ -131,7 +144,6 @@ function App() {
         if (!controller.signal.aborted) setOrdersLoading(false)
       }
     }
-
     void loadOrders()
     return () => controller.abort()
   }, [token, isStaff])
@@ -224,6 +236,115 @@ function App() {
       )
     } finally {
       setDeletingCustomerId(null)
+    }
+  }
+
+  function openAddOrder() {
+    setEditingOrder(null)
+    setEditingOrderId(null)
+    setOrderActionError('')
+    setShowOrderForm(true)
+  }
+
+  async function openEditOrder(order: Order) {
+    if (!token || loadingOrderId !== null) return
+    setLoadingOrderId(order.id)
+    setOrderActionError('')
+    try {
+      const response = await fetch(`${API_URL}/orders/${order.id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!response.ok) throw new Error('Неуспешно зареждане на поръчката за редактиране.')
+      const detail = (await response.json()) as Order
+      // The order detail must identify the customer by ID, not just by name.
+      if (typeof detail.customer_id !== 'number' || detail.customer_id <= 0) {
+        throw new Error('API не върна customer_id. Трябва да проверим GET /orders/{order_id}.')
+      }
+      if (!customers.some((customer) => customer.id === detail.customer_id)) {
+        throw new Error('Клиентът на тази поръчка липсва в списъка с клиенти.')
+      }
+      setEditingOrder({
+        customer_id: detail.customer_id,
+        furniture_type: detail.furniture_type,
+        description: detail.description,
+        status: detail.status,
+      })
+      setEditingOrderId(order.id)
+      setShowOrderForm(true)
+    } catch (err) {
+      setOrderActionError(err instanceof Error ? err.message : 'Грешка при зареждане.')
+    } finally {
+      setLoadingOrderId(null)
+    }
+  }
+
+  function closeOrderForm() {
+    setShowOrderForm(false)
+    setEditingOrder(null)
+    setEditingOrderId(null)
+  }
+
+  async function saveOrder(data: OrderData) {
+    if (!token || !isStaff) throw new Error('Необходим е служебен достъп.')
+    const response = await fetch(
+      editingOrderId === null ? `${API_URL}/orders` : `${API_URL}/orders/${editingOrderId}`,
+      {
+        method: editingOrderId === null ? 'POST' : 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(editingOrderId === null
+          ? {
+              customer_id: data.customer_id,
+              furniture_type: data.furniture_type,
+              description: data.description,
+            }
+          : data),
+      }
+    )
+    if (!response.ok) {
+      throw new Error(
+        response.status === 401 || response.status === 403
+          ? 'Нямате право да променяте поръчки. Влезте отново.'
+          : response.status === 422
+            ? 'Проверете данните на поръчката.'
+            : 'Неуспешно запазване на поръчката.'
+      )
+    }
+    // Refresh the joined customer name and status from the canonical API list.
+    try {
+      setOrders(await fetchOrders(token))
+      setOrdersError('')
+    } catch {
+      setOrdersError('Поръчката е запазена, но списъкът не се обнови. Презаредете страницата.')
+    }
+    setOrderActionError('')
+    closeOrderForm()
+  }
+
+  async function deleteOrder(order: Order) {
+    if (!token || !isStaff || deletingOrderId !== null) return
+    if (!window.confirm(`Сигурни ли сте, че искате да изтриете поръчка №${order.id}?`)) return
+    setDeletingOrderId(order.id)
+    setOrderActionError('')
+    try {
+      const response = await fetch(`${API_URL}/orders/${order.id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!response.ok) {
+        throw new Error(
+          response.status === 401 || response.status === 403
+            ? 'Нямате право да изтривате поръчки.'
+            : 'Неуспешно изтриване. Възможно е поръчката да има свързани материали.'
+        )
+      }
+      setOrders((previous) => previous.filter((item) => item.id !== order.id))
+    } catch (err) {
+      setOrderActionError(err instanceof Error ? err.message : 'Грешка при изтриване.')
+    } finally {
+      setDeletingOrderId(null)
     }
   }
 
@@ -386,6 +507,28 @@ function App() {
               <p>Списък с поръчките на мебелното студио.</p>
             </header>
 
+            <div style={{ marginBottom: '16px' }}>
+              <button type="button" onClick={openAddOrder} disabled={showOrderForm || loading}>
+                + Добави поръчка
+              </button>
+            </div>
+
+            {showOrderForm && (
+              <div style={{ marginBottom: '24px' }}>
+                <OrderForm
+                  key={editingOrderId ?? 'new'}
+                  customers={customers}
+                  initialData={editingOrder ?? undefined}
+                  onSave={saveOrder}
+                  onCancel={closeOrderForm}
+                />
+              </div>
+            )}
+
+            {orderActionError && (
+              <p role="alert" style={{ color: '#b42318' }}>{orderActionError}</p>
+            )}
+
             <div className="table-container">
               <table className="customers-table">
                 <thead>
@@ -395,15 +538,16 @@ function App() {
                     <th>Вид мебели</th>
                     <th>Описание</th>
                     <th>Статус</th>
+                    <th>Действия</th>
                   </tr>
                 </thead>
                 <tbody>
                   {ordersLoading ? (
-                    <tr><td colSpan={5}>Зареждане на поръчките...</td></tr>
+                    <tr><td colSpan={6}>Зареждане на поръчките...</td></tr>
                   ) : ordersError ? (
-                    <tr><td colSpan={5}>{ordersError}</td></tr>
+                    <tr><td colSpan={6}>{ordersError}</td></tr>
                   ) : orders.length === 0 ? (
-                    <tr><td colSpan={5}>Няма добавени поръчки.</td></tr>
+                    <tr><td colSpan={6}>Няма добавени поръчки.</td></tr>
                   ) : (
                     orders.map((order) => (
                       <tr key={order.id}>
@@ -423,6 +567,23 @@ function App() {
                           >
                             {order.status}
                           </span>
+                        </td>
+                        <td>
+                          <button
+                            type="button"
+                            onClick={() => void openEditOrder(order)}
+                            disabled={loadingOrderId !== null || deletingOrderId !== null}
+                            style={{ marginRight: '8px' }}
+                          >
+                            {loadingOrderId === order.id ? 'Зареждане...' : 'Редактирай'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void deleteOrder(order)}
+                            disabled={loadingOrderId !== null || deletingOrderId !== null}
+                          >
+                            {deletingOrderId === order.id ? 'Изтриване...' : 'Изтрий'}
+                          </button>
                         </td>
                       </tr>
                     ))
