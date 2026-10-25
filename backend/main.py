@@ -46,6 +46,11 @@ class OrderMaterialCreate(BaseModel):
     material_name: str = Field(min_length=2, max_length=100)
     quantity: float = Field(gt=0)
 
+class OrderMaterialUpdate(BaseModel):
+    order_id: int = Field(gt=0)
+    material_name: str = Field(min_length=2, max_length=100)
+    quantity: float = Field(gt=0)
+
 @app.get("/")
 def home():
     return {"message": "FurniPro API is working!"}
@@ -523,4 +528,98 @@ def create_order_material(material: OrderMaterialCreate):
         raise HTTPException(
             status_code=500,
             detail="Failed to create order material"
+        )
+
+
+@app.put("/order-materials/{material_id}")
+def update_order_material(
+    material_id: int,
+    material: OrderMaterialUpdate
+):
+    try:
+        with engine.begin() as connection:
+            order_exists = connection.execute(
+                text("SELECT id FROM orders WHERE id = :order_id"),
+                {"order_id": material.order_id}
+            ).first()
+
+            if order_exists is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail="Order not found"
+                )
+
+            result = connection.execute(
+                text("""
+                    UPDATE order_materials
+                    SET
+                        order_id = :order_id,
+                        material_name = :material_name,
+                        quantity = :quantity
+                    WHERE id = :material_id
+                    RETURNING
+                        id,
+                        order_id,
+                        material_name,
+                        quantity
+                """),
+                {
+                    "material_id": material_id,
+                    "order_id": material.order_id,
+                    "material_name": material.material_name,
+                    "quantity": material.quantity
+                }
+            )
+
+            updated_material = result.mappings().first()
+
+            if updated_material is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail="Order material not found"
+                )
+
+            return dict(updated_material)
+
+    except SQLAlchemyError as error:
+        print("DATABASE ERROR:", error)
+
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to update order material"
+        )
+
+
+@app.delete("/order-materials/{material_id}")
+def delete_order_material(material_id: int):
+    try:
+        with engine.begin() as connection:
+            result = connection.execute(
+                text("""
+                    DELETE FROM order_materials
+                    WHERE id = :material_id
+                    RETURNING id
+                """),
+                {"material_id": material_id}
+            )
+
+            deleted_material = result.mappings().first()
+
+            if deleted_material is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail="Order material not found"
+                )
+
+            return {
+                "message": "Order material deleted successfully",
+                "deleted_id": deleted_material["id"]
+            }
+
+    except SQLAlchemyError as error:
+        print("DATABASE ERROR:", error)
+
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to delete order material"
         )
