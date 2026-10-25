@@ -1,6 +1,9 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+from typing import Literal
+from pwdlib import PasswordHash
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -591,3 +594,92 @@ def delete_order_material(material_id: int):
     except SQLAlchemyError as error:
         print("DATABASE ERROR:", error)
         raise HTTPException(status_code=500, detail="Failed to delete order material")
+
+@app.get("/users")
+def get_users():
+    try:
+        with engine.connect() as connection:
+            result = connection.execute(
+                text("""
+                    SELECT
+                        id,
+                        username,
+                        email,
+                        role,
+                        created_at
+                    FROM users
+                    ORDER BY id
+                """)
+            )
+
+            return [dict(row) for row in result.mappings().all()]
+
+    except SQLAlchemyError:
+        raise HTTPException(
+            status_code=500,
+            detail="Database error while fetching users"
+        )
+
+
+# ==========================================
+# USER MANAGEMENT
+# ==========================================
+
+password_hasher = PasswordHash.recommended()
+
+
+class UserCreate(BaseModel):
+    username: str = Field(min_length=3, max_length=50)
+    email: str = Field(min_length=5, max_length=255)
+    password: str = Field(min_length=8)
+    role: Literal["admin", "designer", "client"]
+
+
+@app.post("/users", status_code=201)
+def create_user(user: UserCreate):
+    hashed_password = password_hasher.hash(user.password)
+
+    try:
+        with engine.begin() as connection:
+            result = connection.execute(
+                text("""
+                    INSERT INTO users (
+                        username,
+                        email,
+                        password_hash,
+                        role
+                    )
+                    VALUES (
+                        :username,
+                        :email,
+                        :password_hash,
+                        :role
+                    )
+                    RETURNING
+                        id,
+                        username,
+                        email,
+                        role,
+                        created_at
+                """),
+                {
+                    "username": user.username,
+                    "email": user.email,
+                    "password_hash": hashed_password,
+                    "role": user.role,
+                },
+            ).mappings().one()
+
+            return dict(result)
+
+    except IntegrityError:
+        raise HTTPException(
+            status_code=409,
+            detail="Username or email already exists"
+        )
+
+    except SQLAlchemyError:
+        raise HTTPException(
+            status_code=500,
+            detail="Database error while creating user"
+        )
