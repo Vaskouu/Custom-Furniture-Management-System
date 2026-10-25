@@ -599,97 +599,8 @@ def delete_order_material(material_id: int):
         print("DATABASE ERROR:", error)
         raise HTTPException(status_code=500, detail="Failed to delete order material")
 
-@app.get("/users")
-def get_users():
-    try:
-        with engine.connect() as connection:
-            result = connection.execute(
-                text("""
-                    SELECT
-                        id,
-                        username,
-                        email,
-                        role,
-                        created_at
-                    FROM users
-                    ORDER BY id
-                """)
-            )
-
-            return [dict(row) for row in result.mappings().all()]
-
-    except SQLAlchemyError:
-        raise HTTPException(
-            status_code=500,
-            detail="Database error while fetching users"
-        )
-
 
 # ==========================================
-# USER MANAGEMENT
-# ==========================================
-
-password_hasher = PasswordHash.recommended()
-
-
-class UserCreate(BaseModel):
-    username: str = Field(min_length=3, max_length=50)
-    email: str = Field(min_length=5, max_length=255)
-    password: str = Field(min_length=8)
-    role: Literal["admin", "designer", "client"]
-
-
-@app.post("/users", status_code=201)
-def create_user(user: UserCreate):
-    hashed_password = password_hasher.hash(user.password)
-
-    try:
-        with engine.begin() as connection:
-            result = connection.execute(
-                text("""
-                    INSERT INTO users (
-                        username,
-                        email,
-                        password_hash,
-                        role
-                    )
-                    VALUES (
-                        :username,
-                        :email,
-                        :password_hash,
-                        :role
-                    )
-                    RETURNING
-                        id,
-                        username,
-                        email,
-                        role,
-                        created_at
-                """),
-                {
-                    "username": user.username,
-                    "email": user.email,
-                    "password_hash": hashed_password,
-                    "role": user.role,
-                },
-            ).mappings().one()
-
-            return dict(result)
-
-    except IntegrityError:
-        raise HTTPException(
-            status_code=409,
-            detail="Username or email already exists"
-        )
-
-    except SQLAlchemyError:
-        raise HTTPException(
-            status_code=500,
-            detail="Database error while creating user"
-        )
-
-
-        # ==========================================
 # AUTHENTICATION
 # ==========================================
 
@@ -738,7 +649,8 @@ def login(data: LoginRequest):
         },
     }
 
-    # ==========================================
+
+# ==========================================
 # CURRENT AUTHENTICATED USER
 # ==========================================
 
@@ -783,3 +695,116 @@ def get_current_user(
         )
 
     return dict(user)
+
+
+# ==========================================
+# ROLE-BASED ACCESS CONTROL
+# ==========================================
+
+def require_admin(
+    current_user: dict = Depends(get_current_user)
+):
+    if current_user["role"] != "admin":
+        raise HTTPException(
+            status_code=403,
+            detail="Admin access required"
+        )
+
+    return current_user
+
+
+# ==========================================
+# GET USERS - ADMIN ONLY
+# ==========================================
+
+@app.get("/users")
+def get_users(admin: dict = Depends(require_admin)):
+    try:
+        with engine.connect() as connection:
+            result = connection.execute(
+                text("""
+                    SELECT
+                        id,
+                        username,
+                        email,
+                        role,
+                        created_at
+                    FROM users
+                    ORDER BY id
+                """)
+            )
+
+            return [dict(row) for row in result.mappings().all()]
+
+    except SQLAlchemyError:
+        raise HTTPException(
+            status_code=500,
+            detail="Database error while fetching users"
+        )
+
+
+# ==========================================
+# USER MANAGEMENT - ADMIN ONLY
+# ==========================================
+
+password_hasher = PasswordHash.recommended()
+
+
+class UserCreate(BaseModel):
+    username: str = Field(min_length=3, max_length=50)
+    email: str = Field(min_length=5, max_length=255)
+    password: str = Field(min_length=8)
+    role: Literal["admin", "designer", "client"]
+
+
+@app.post("/users", status_code=201)
+def create_user(
+    user: UserCreate,
+    admin: dict = Depends(require_admin)
+):
+    hashed_password = password_hasher.hash(user.password)
+
+    try:
+        with engine.begin() as connection:
+            result = connection.execute(
+                text("""
+                    INSERT INTO users (
+                        username,
+                        email,
+                        password_hash,
+                        role
+                    )
+                    VALUES (
+                        :username,
+                        :email,
+                        :password_hash,
+                        :role
+                    )
+                    RETURNING
+                        id,
+                        username,
+                        email,
+                        role,
+                        created_at
+                """),
+                {
+                    "username": user.username,
+                    "email": user.email,
+                    "password_hash": hashed_password,
+                    "role": user.role,
+                },
+            ).mappings().one()
+
+            return dict(result)
+
+    except IntegrityError:
+        raise HTTPException(
+            status_code=409,
+            detail="Username or email already exists"
+        )
+
+    except SQLAlchemyError:
+        raise HTTPException(
+            status_code=500,
+            detail="Database error while creating user"
+        )
