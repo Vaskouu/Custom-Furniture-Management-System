@@ -60,6 +60,80 @@ class OrderMaterialUpdate(BaseModel):
     quantity: float = Field(gt=0)
 
 
+# ==========================================
+# CURRENT AUTHENTICATED USER
+# ==========================================
+
+bearer_scheme = HTTPBearer()
+
+
+@app.get("/auth/me")
+def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)
+):
+    try:
+        user_id = decode_access_token(credentials.credentials)
+
+    except jwt.InvalidTokenError:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid or expired token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    try:
+        with engine.connect() as connection:
+            user = connection.execute(
+                text("""
+                    SELECT id, username, email, role
+                    FROM users
+                    WHERE id = :user_id
+                """),
+                {"user_id": user_id},
+            ).mappings().first()
+
+    except SQLAlchemyError:
+        raise HTTPException(
+            status_code=500,
+            detail="Database error while fetching current user",
+        )
+
+    if user is None:
+        raise HTTPException(
+            status_code=401,
+            detail="User no longer exists",
+        )
+
+    return dict(user)
+
+
+# ==========================================
+# ROLE-BASED ACCESS CONTROL
+# ==========================================
+
+def require_admin(
+    current_user: dict = Depends(get_current_user)
+):
+    if current_user["role"] != "admin":
+        raise HTTPException(
+            status_code=403,
+            detail="Admin access required"
+        )
+
+    return current_user
+
+
+def require_staff(
+    current_user: dict = Depends(get_current_user)
+):
+    if current_user["role"] not in ("admin", "designer"):
+        raise HTTPException(
+            status_code=403,
+            detail="Staff access required"
+        )
+    return current_user
+
+
 @app.get("/")
 def home():
     return {"message": "FurniPro API is working!"}
@@ -91,7 +165,7 @@ def health_check():
 
 
 @app.get("/customers")
-def get_customers():
+def get_customers(staff: dict = Depends(require_staff)):
     try:
         with engine.connect() as connection:
             result = connection.execute(
@@ -107,9 +181,7 @@ def get_customers():
             status_code=500,
             detail="Database query failed"
         )
-
-
-@app.get("/orders")
+@app.get("/orders", dependencies=[Depends(require_staff)])
 def get_orders():
     try:
         with engine.connect() as connection:
@@ -139,7 +211,11 @@ def get_orders():
         )
 
 
-@app.post("/customers", status_code=201)
+@app.post(
+    "/customers",
+    status_code=201,
+    dependencies=[Depends(require_staff)]
+)
 def create_customer(customer: CustomerCreate):
     try:
         with engine.begin() as connection:
@@ -167,7 +243,7 @@ def create_customer(customer: CustomerCreate):
         )
 
 
-@app.get("/customers/{customer_id}")
+@app.get("/customers/{customer_id}", dependencies=[Depends(require_staff)])
 def get_customer_by_id(customer_id: int):
     try:
         with engine.connect() as connection:
@@ -198,7 +274,7 @@ def get_customer_by_id(customer_id: int):
             detail="Failed to retrieve customer"
         )
 
-@app.put("/customers/{customer_id}")
+@app.put("/customers/{customer_id}", dependencies=[Depends(require_staff)])
 def update_customer(customer_id: int, customer: CustomerUpdate):
     try:
         with engine.begin() as connection:
@@ -239,7 +315,7 @@ def update_customer(customer_id: int, customer: CustomerUpdate):
 
 
 
-@app.delete("/customers/{customer_id}")
+@app.delete("/customers/{customer_id}", dependencies=[Depends(require_staff)])
 def delete_customer(customer_id: int):
     try:
         with engine.begin() as connection:
@@ -275,7 +351,11 @@ def delete_customer(customer_id: int):
 
 
 
-@app.post("/orders", status_code=201)        
+@app.post(
+    "/orders",
+    status_code=201,
+    dependencies=[Depends(require_staff)]
+)
 def create_order(order: OrderCreate):
     try:
         with engine.begin() as connection:
@@ -327,7 +407,7 @@ def create_order(order: OrderCreate):
         )
 
 
-@app.get("/orders/{order_id}")
+@app.get("/orders/{order_id}", dependencies=[Depends(require_staff)])
 def get_order_by_id(order_id: int):
     try:
         with engine.connect() as connection:
@@ -365,7 +445,7 @@ def get_order_by_id(order_id: int):
             detail="Failed to retrieve order"
         )
 
-@app.put("/orders/{order_id}")
+@app.put("/orders/{order_id}", dependencies=[Depends(require_staff)])
 def update_order(order_id: int, order: OrderUpdate):
     try:
         with engine.begin() as connection:
@@ -427,7 +507,7 @@ def update_order(order_id: int, order: OrderUpdate):
             detail="Failed to update order"
         )
 
-@app.delete("/orders/{order_id}")
+@app.delete("/orders/{order_id}", dependencies=[Depends(require_staff)])
 def delete_order(order_id: int):
     try:
         with engine.begin() as connection:
@@ -460,7 +540,7 @@ def delete_order(order_id: int):
             detail="Failed to delete order"
         )
 
-@app.get("/materials")
+@app.get("/materials", dependencies=[Depends(require_staff)])
 def get_materials():
     try:
         with engine.connect() as connection:
@@ -475,7 +555,7 @@ def get_materials():
         raise HTTPException(status_code=500, detail="Failed to retrieve materials")
 
 
-@app.get("/order-materials")
+@app.get("/order-materials", dependencies=[Depends(require_staff)])
 def get_order_materials():
     try:
         with engine.connect() as connection:
@@ -502,7 +582,11 @@ def get_order_materials():
         raise HTTPException(status_code=500, detail="Failed to retrieve order materials")
 
 
-@app.post("/order-materials", status_code=201)
+@app.post(
+    "/order-materials",
+    status_code=201,
+    dependencies=[Depends(require_staff)]
+)
 def create_order_material(material: OrderMaterialCreate):
     try:
         with engine.begin() as connection:
@@ -537,7 +621,7 @@ def create_order_material(material: OrderMaterialCreate):
         raise HTTPException(status_code=500, detail="Failed to create order material")
 
 
-@app.put("/order-materials/{material_id}")
+@app.put("/order-materials/{material_id}", dependencies=[Depends(require_staff)])
 def update_order_material(material_id: int, material: OrderMaterialUpdate):
     try:
         with engine.begin() as connection:
@@ -579,7 +663,7 @@ def update_order_material(material_id: int, material: OrderMaterialUpdate):
         raise HTTPException(status_code=500, detail="Failed to update order material")
 
 
-@app.delete("/order-materials/{material_id}")
+@app.delete("/order-materials/{material_id}", dependencies=[Depends(require_staff)])
 def delete_order_material(material_id: int):
     try:
         with engine.begin() as connection:
@@ -648,69 +732,6 @@ def login(data: LoginRequest):
             "role": user["role"],
         },
     }
-
-
-# ==========================================
-# CURRENT AUTHENTICATED USER
-# ==========================================
-
-bearer_scheme = HTTPBearer()
-
-
-@app.get("/auth/me")
-def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)
-):
-    try:
-        user_id = decode_access_token(credentials.credentials)
-
-    except jwt.InvalidTokenError:
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid or expired token",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    try:
-        with engine.connect() as connection:
-            user = connection.execute(
-                text("""
-                    SELECT id, username, email, role
-                    FROM users
-                    WHERE id = :user_id
-                """),
-                {"user_id": user_id},
-            ).mappings().first()
-
-    except SQLAlchemyError:
-        raise HTTPException(
-            status_code=500,
-            detail="Database error while fetching current user",
-        )
-
-    if user is None:
-        raise HTTPException(
-            status_code=401,
-            detail="User no longer exists",
-        )
-
-    return dict(user)
-
-
-# ==========================================
-# ROLE-BASED ACCESS CONTROL
-# ==========================================
-
-def require_admin(
-    current_user: dict = Depends(get_current_user)
-):
-    if current_user["role"] != "admin":
-        raise HTTPException(
-            status_code=403,
-            detail="Admin access required"
-        )
-
-    return current_user
 
 
 # ==========================================
