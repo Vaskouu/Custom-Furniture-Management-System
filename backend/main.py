@@ -1,12 +1,16 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+from auth import verify_password, create_access_token
 from typing import Literal
 from pwdlib import PasswordHash
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
-
+import jwt
+from fastapi import Depends
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from auth import decode_access_token
 from database import engine
 
 
@@ -683,3 +687,99 @@ def create_user(user: UserCreate):
             status_code=500,
             detail="Database error while creating user"
         )
+
+
+        # ==========================================
+# AUTHENTICATION
+# ==========================================
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+
+@app.post("/auth/login")
+def login(data: LoginRequest):
+    try:
+        with engine.connect() as connection:
+            user = connection.execute(
+                text("""
+                    SELECT id, username, password_hash, role
+                    FROM users
+                    WHERE username = :username
+                """),
+                {"username": data.username},
+            ).mappings().first()
+
+    except SQLAlchemyError:
+        raise HTTPException(
+            status_code=500,
+            detail="Database error during login"
+        )
+
+    if user is None or not verify_password(
+        data.password, user["password_hash"]
+    ):
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    access_token = create_access_token(user["id"])
+
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": {
+            "id": user["id"],
+            "username": user["username"],
+            "role": user["role"],
+        },
+    }
+
+    # ==========================================
+# CURRENT AUTHENTICATED USER
+# ==========================================
+
+bearer_scheme = HTTPBearer()
+
+
+@app.get("/auth/me")
+def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)
+):
+    try:
+        user_id = decode_access_token(credentials.credentials)
+
+    except jwt.InvalidTokenError:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid or expired token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    try:
+        with engine.connect() as connection:
+            user = connection.execute(
+                text("""
+                    SELECT id, username, email, role
+                    FROM users
+                    WHERE id = :user_id
+                """),
+                {"user_id": user_id},
+            ).mappings().first()
+
+    except SQLAlchemyError:
+        raise HTTPException(
+            status_code=500,
+            detail="Database error while fetching current user",
+        )
+
+    if user is None:
+        raise HTTPException(
+            status_code=401,
+            detail="User no longer exists",
+        )
+
+    return dict(user)
