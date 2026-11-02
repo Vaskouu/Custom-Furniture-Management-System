@@ -34,9 +34,12 @@ type OrderMaterial = {
   quantity: number
 }
 
+//tuk se zadava adresut na FastAPI survura.
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000"
 
+//glavniqt komponent, koito upravlqva stranicite i dannite.
 function App() {
+  //tuk React pazi aktivnata stranica, tokena i dannite ot API.
   const [activePage, setActivePage] = useState<Page>('dashboard')
   const [token, setToken] = useState<string | null>(null)
   const [user, setUser] = useState<User | null>(null)
@@ -75,12 +78,14 @@ function App() {
 
   const isStaff = user?.role === 'admin' || user?.role === 'designer' 
 
+  //pri vhod zapazva tokena i potrebitelq.
   function handleLogin(accessToken: string, loggedInUser: User) {
     setToken(accessToken)
     setUser(loggedInUser)
     setActivePage('dashboard')
   }
 
+  //pri izhod izchistva dannite i vrushta kum vhod.
   function handleLogout() {
     setToken(null)
     setUser(null)
@@ -112,6 +117,7 @@ function App() {
     setActivePage('dashboard')
   }
 
+  //zarejda klientite ot backend chrez JWT token.
   async function fetchCustomers(accessToken: string, signal?: AbortSignal) {
     const response = await fetch(`${API_URL}/customers`, {
       headers: { Authorization: `Bearer ${accessToken}` },
@@ -154,6 +160,7 @@ function App() {
     return () => controller.abort()
   }, [token, isStaff])
 
+  //zarejda poruchkite ot backend.
   async function fetchOrders(accessToken: string, signal?: AbortSignal) {
     const response = await fetch(`${API_URL}/orders`, {
       headers: { Authorization: `Bearer ${accessToken}` },
@@ -190,6 +197,7 @@ function App() {
     return () => controller.abort()
   }, [token, isStaff])
 
+  //tuk sa butonite i zaqvkite za materialite kum poruchki.
   function closeOrderMaterialForm() {
   setSelectedOrderId(null)
   setEditingOrderMaterialId(null)
@@ -297,6 +305,7 @@ async function deleteOrderMaterial(item: OrderMaterial) {
 }
 
 
+  //zarejda materialite, svurzani s poruchkite.
   async function fetchOrderMaterials(
   accessToken: string,
   signal?: AbortSignal
@@ -354,6 +363,7 @@ useEffect(() => {
   return () => controller.abort()
 }, [token, isStaff])
 
+  //zarejda spisuka s materialite ot API.
   async function fetchMaterials(accessToken: string, signal?: AbortSignal) {
     const response = await fetch(`${API_URL}/materials`, {
       headers: { Authorization: `Bearer ${accessToken}` },
@@ -383,6 +393,7 @@ useEffect(() => {
     return () => controller.abort()
   }, [token, isStaff])
 
+  //tuk se dobavqt, redaktirat i triqt materialite.
   function openAddMaterial() {
     setEditingMaterial(null)
     setMaterialActionError('')
@@ -448,6 +459,7 @@ useEffect(() => {
     }
   }
 
+  //tuk se dobavqt, redaktirat i triqt klientite.
   function openAddCustomer() {
     setEditingCustomer(null)
     setCustomerActionError('')
@@ -539,6 +551,7 @@ useEffect(() => {
     }
   }
 
+  //tuk se dobavqt, redaktirat i triqt poruchkite.
   function openAddOrder() {
     setEditingOrder(null)
     setEditingOrderId(null)
@@ -556,7 +569,7 @@ useEffect(() => {
       })
       if (!response.ok) throw new Error('Неуспешно зареждане на поръчката за редактиране.')
       const detail = (await response.json()) as Order
-      // The order detail must identify the customer by ID, not just by name.
+      //za redakciq e nujno id na klienta, a ne samo imeto mu.
       if (typeof detail.customer_id !== 'number' || detail.customer_id <= 0) {
         throw new Error('API не върна customer_id. Трябва да проверим GET /orders/{order_id}.')
       }
@@ -612,7 +625,7 @@ useEffect(() => {
             : 'Неуспешно запазване на поръчката.'
       )
     }
-    // Refresh the joined customer name and status from the canonical API list.
+    //sled zapis obnovqva spisuka s poruchki ot API.
     try {
       setOrders(await fetchOrders(token))
       setOrdersError('')
@@ -654,7 +667,7 @@ useEffect(() => {
 
   return (
     <div className="app">
-      {/* Странично меню */}
+      {/*tuk e stranichnoto menu i navigaciqta.*/}
       <aside className="sidebar">
         <h1>FurniPro</h1>
         <p>Управление на мебелно студио</p>
@@ -686,9 +699,9 @@ useEffect(() => {
         </div>
       </aside>
 
-      {/* Основно съдържание */}
+        {/*tuk se pokazva izbranata stranica.*/}
       <main className="content">
-        {/* ТАБЛО */}
+        {/*tuk e nachalnoto tablo.*/}
         {activePage === 'dashboard' && (
           <>
             <header>
@@ -722,7 +735,7 @@ useEffect(() => {
           </>
         )}
 
-        {/* КЛИЕНТИ */}
+        {/*tuk sa butonite i tablicata za klienti.*/}
         {isStaff && activePage === 'customers' && (
           <section className="customers-page">
             <header>
@@ -802,7 +815,7 @@ useEffect(() => {
           </section>
         )}
 
-        {/* ПОРЪЧКИ */}
+        {/*tuk sa butonite i tablicite za poruchki i tehnite materiali.*/}
         {isStaff && activePage === 'orders' && (
           <section className="orders-page">
             <header>
@@ -992,7 +1005,7 @@ useEffect(() => {
           </section>
         )}
 
-        {/* МАТЕРИАЛИ */}
+        {/*tuk sa butonite i tablicata za materiali.*/}
         {isStaff && activePage === 'materials' && (
           <section className="materials-page">
             <header>

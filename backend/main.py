@@ -14,6 +14,7 @@ from auth import decode_access_token
 from database import engine
 
 
+#suzdava se FastAPI servera i se nastroiva CORS za React.
 app = FastAPI(title="FurniPro API")
 app.add_middleware(
     CORSMiddleware,
@@ -28,6 +29,7 @@ app.add_middleware(
 )
 
 
+#modelite koito proverqvat dannite predi zapis.
 class CustomerCreate(BaseModel):
     name: str = Field(min_length=2, max_length=100)
     phone: str = Field(min_length=7, max_length=20)
@@ -73,13 +75,11 @@ class OrderMaterialUpdate(BaseModel):
     quantity: float = Field(gt=0)
 
 
-# ==========================================
-# CURRENT AUTHENTICATED USER
-# ==========================================
 
 bearer_scheme = HTTPBearer()
 
 
+#proverqva JWT tokena i namira tekushtiq potrebitel.
 @app.get("/auth/me")
 def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)
@@ -120,10 +120,8 @@ def get_current_user(
     return dict(user)
 
 
-# ==========================================
-# ROLE-BASED ACCESS CONTROL
-# ==========================================
 
+#proverqva se dali potrebitelqt e admin.
 def require_admin(
     current_user: dict = Depends(get_current_user)
 ):
@@ -136,6 +134,7 @@ def require_admin(
     return current_user
 
 
+#proverqva se dali potrebitelqt e admin ili designer.
 def require_staff(
     current_user: dict = Depends(get_current_user)
 ):
@@ -152,6 +151,7 @@ def home():
     return {"message": "FurniPro API is working!"}
 
 
+#proverqva dali API i bazata rabotqt.
 @app.get("/health")
 def health_check():
     try:
@@ -177,6 +177,7 @@ def health_check():
         )
 
 
+#zaqvkite za klientite - dobavqne, pregled, redakciq i iztrivane.
 @app.get("/customers")
 def get_customers(staff: dict = Depends(require_staff)):
     try:
@@ -194,6 +195,7 @@ def get_customers(staff: dict = Depends(require_staff)):
             status_code=500,
             detail="Database query failed"
         )
+#tuka sa poruchkite; JOIN vzima imeto na klienta ot bazata.
 @app.get("/orders", dependencies=[Depends(require_staff)])
 def get_orders():
     try:
@@ -553,6 +555,7 @@ def delete_order(order_id: int):
             detail="Failed to delete order"
         )
 
+#tuka sa materialite; ne se triqt ako se polzvat v poruchka.
 @app.get("/materials", dependencies=[Depends(require_staff)])
 def get_materials():
     try:
@@ -692,6 +695,7 @@ def delete_material(material_id: int):
             detail="Failed to delete material"
         )
 
+#tuka se svurzva poruchka, material i kolichestvo.
 @app.get("/order-materials", dependencies=[Depends(require_staff)])
 def get_order_materials():
     try:
@@ -757,7 +761,6 @@ def create_order_material(material: OrderMaterialCreate):
         print("DATABASE ERROR:", error)
         raise HTTPException(status_code=500, detail="Failed to create order material")
 
-
 @app.put("/order-materials/{material_id}", dependencies=[Depends(require_staff)])
 def update_order_material(material_id: int, material: OrderMaterialUpdate):
     try:
@@ -821,15 +824,11 @@ def delete_order_material(material_id: int):
         raise HTTPException(status_code=500, detail="Failed to delete order material")
 
 
-# ==========================================
-# AUTHENTICATION
-# ==========================================
-
 class LoginRequest(BaseModel):
     username: str
     password: str
 
-
+#proverqva parola i vrushta JWT token kum React.
 @app.post("/auth/login")
 def login(data: LoginRequest):
     try:
@@ -871,10 +870,8 @@ def login(data: LoginRequest):
     }
 
 
-# ==========================================
-# GET USERS - ADMIN ONLY
-# ==========================================
 
+#tuka admina moje da vidi spisuka s potrebiteli.
 @app.get("/users")
 def get_users(admin: dict = Depends(require_admin)):
     try:
@@ -901,12 +898,9 @@ def get_users(admin: dict = Depends(require_admin)):
         )
 
 
-# ==========================================
-# USER MANAGEMENT - ADMIN ONLY
-# ==========================================
+#a tuk moje da suzdava potrebiteli.
 
 password_hasher = PasswordHash.recommended()
-
 
 class UserCreate(BaseModel):
     username: str = Field(min_length=3, max_length=50)
