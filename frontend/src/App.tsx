@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react'
 import Login, { type User } from './components/Login'
 import CustomerForm, { type CustomerData } from './components/CustomerForm'
 import OrderForm, { type OrderData } from './components/OrderForm'
+import MaterialForm, { type MaterialData } from './components/MaterialForm'
 import './App.css'
 
-type Page = 'dashboard' | 'customers' | 'orders'
+type Page = 'dashboard' | 'customers' | 'orders' | 'materials'
 
 type Customer = CustomerData & { id: number }
+type Material = MaterialData & { id: number }
 
 type Order = {
   id: number
@@ -17,7 +19,7 @@ type Order = {
   customer_id?: number
 }
 
-const API_URL = 'http://127.0.0.1:8000'
+const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000"
 
 function App() {
   const [activePage, setActivePage] = useState<Page>('dashboard')
@@ -42,7 +44,15 @@ function App() {
   const [loadingOrderId, setLoadingOrderId] = useState<number | null>(null)
   const [deletingOrderId, setDeletingOrderId] = useState<number | null>(null)
 
-  const isStaff = user?.role === 'admin' || user?.role === 'designer'
+  const [materials, setMaterials] = useState<Material[]>([])
+  const [materialsLoading, setMaterialsLoading] = useState(false)
+  const [materialsError, setMaterialsError] = useState('')
+  const [materialActionError, setMaterialActionError] = useState('')
+  const [showMaterialForm, setShowMaterialForm] = useState(false)
+  const [editingMaterial, setEditingMaterial] = useState<Material | null>(null)
+  const [deletingMaterialId, setDeletingMaterialId] = useState<number | null>(null)
+
+  const isStaff = user?.role === 'admin' || user?.role === 'designer' 
 
   function handleLogin(accessToken: string, loggedInUser: User) {
     setToken(accessToken)
@@ -55,6 +65,12 @@ function App() {
     setUser(null)
     setCustomers([])
     setOrders([])
+    setMaterials([])
+    setMaterialsError('')
+    setMaterialActionError('')
+    setShowMaterialForm(false)
+    setEditingMaterial(null)
+    setDeletingMaterialId(null)
     setError('')
     setOrdersError('')
     setCustomerActionError('')
@@ -147,6 +163,100 @@ function App() {
     void loadOrders()
     return () => controller.abort()
   }, [token, isStaff])
+
+  async function fetchMaterials(accessToken: string, signal?: AbortSignal) {
+    const response = await fetch(`${API_URL}/materials`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      signal,
+    })
+    if (!response.ok) throw new Error(response.status === 401 || response.status === 403
+      ? 'Нямате достъп до материалите.' : 'Неуспешно зареждане на материалите.')
+    return (await response.json()) as Material[]
+  }
+
+  useEffect(() => {
+    if (!token || !isStaff) return
+    const controller = new AbortController()
+    async function loadMaterials() {
+      setMaterialsLoading(true)
+      setMaterialsError('')
+      try {
+        const data = await fetchMaterials(token!, controller.signal)
+        if (!controller.signal.aborted) setMaterials(data)
+      } catch (err) {
+        if (!controller.signal.aborted) setMaterialsError(err instanceof Error ? err.message : 'Грешка при връзка с API.')
+      } finally {
+        if (!controller.signal.aborted) setMaterialsLoading(false)
+      }
+    }
+    void loadMaterials()
+    return () => controller.abort()
+  }, [token, isStaff])
+
+  function openAddMaterial() {
+    setEditingMaterial(null)
+    setMaterialActionError('')
+    setShowMaterialForm(true)
+  }
+
+  function openEditMaterial(material: Material) {
+    setEditingMaterial(material)
+    setMaterialActionError('')
+    setShowMaterialForm(true)
+  }
+
+  function closeMaterialForm() {
+    setShowMaterialForm(false)
+    setEditingMaterial(null)
+  }
+
+  async function saveMaterial(data: MaterialData) {
+    if (!token || !isStaff) throw new Error('Необходим е служебен достъп.')
+    const id = editingMaterial?.id
+    const response = await fetch(id === undefined ? `${API_URL}/materials` : `${API_URL}/materials/${id}`, {
+      method: id === undefined ? 'POST' : 'PUT',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    })
+    if (!response.ok) {
+      throw new Error(response.status === 401 || response.status === 403
+        ? 'Нямате право да променяте материали.'
+        : response.status === 422 ? 'Проверете въведените данни.' : 'Неуспешно запазване на материала.')
+    }
+    try {
+      setMaterials(await fetchMaterials(token))
+      setMaterialsError('')
+    } catch {
+      setMaterialsError('Материалът е запазен, но списъкът не се обнови. Презаредете страницата.')
+    }
+    setMaterialActionError('')
+    closeMaterialForm()
+  }
+
+  async function deleteMaterial(material: Material) {
+    if (!token || !isStaff || deletingMaterialId !== null) return
+    if (!window.confirm(`Сигурни ли сте, че искате да изтриете ${material.name}?`)) return
+    setDeletingMaterialId(material.id)
+    setMaterialActionError('')
+    try {
+      const response = await fetch(`${API_URL}/materials/${material.id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!response.ok) {
+        throw new Error(response.status === 409 || response.status === 400
+          ? 'Материалът не може да се изтрие, защото е свързан с поръчка.'
+          : response.status === 401 || response.status === 403
+            ? 'Нямате право да изтривате материали.'
+            : 'Неуспешно изтриване. Проверете дали материалът е свързан с поръчка.')
+      }
+      setMaterials((previous) => previous.filter((item) => item.id !== material.id))
+    } catch (err) {
+      setMaterialActionError(err instanceof Error ? err.message : 'Грешка при изтриване.')
+    } finally {
+      setDeletingMaterialId(null)
+    }
+  }
 
   function openAddCustomer() {
     setEditingCustomer(null)
@@ -372,6 +482,9 @@ function App() {
               <a href="#orders" onClick={() => setActivePage('orders')}>
                 Поръчки
               </a>
+              <a href="#materials" onClick={() => setActivePage('materials')}>
+                Материали
+              </a>
             </>
           )}
         </nav>
@@ -588,6 +701,63 @@ function App() {
                       </tr>
                     ))
                   )}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
+
+        {/* МАТЕРИАЛИ */}
+        {isStaff && activePage === 'materials' && (
+          <section className="materials-page">
+            <header>
+              <h2>Материали</h2>
+              <p>Списък с материали, мерни единици и цени.</p>
+            </header>
+            <div style={{ marginBottom: '16px' }}>
+              <button type="button" onClick={openAddMaterial} disabled={showMaterialForm}>
+                + Добави материал
+              </button>
+            </div>
+            {showMaterialForm && (
+              <div style={{ marginBottom: '24px' }}>
+                <MaterialForm
+                  key={editingMaterial?.id ?? 'new'}
+                  initialData={editingMaterial ?? undefined}
+                  onSave={saveMaterial}
+                  onCancel={closeMaterialForm}
+                />
+              </div>
+            )}
+            {materialActionError && <p role="alert" style={{ color: '#b42318' }}>{materialActionError}</p>}
+            <div className="table-container">
+              <table className="customers-table">
+                <thead><tr>
+                  <th>ID</th><th>Име</th><th>Мерна единица</th><th>Цена за единица (€)</th><th>Действия</th>
+                </tr></thead>
+                <tbody>
+                  {materialsLoading ? (
+                    <tr><td colSpan={5}>Зареждане на материалите...</td></tr>
+                  ) : materialsError ? (
+                    <tr><td colSpan={5}>{materialsError}</td></tr>
+                  ) : materials.length === 0 ? (
+                    <tr><td colSpan={5}>Няма добавени материали.</td></tr>
+                  ) : materials.map((material) => (
+                    <tr key={material.id}>
+                      <td>{material.id}</td>
+                      <td>{material.name}</td>
+                      <td>{material.unit}</td>
+                      <td>{Number(material.price_per_unit).toFixed(2)}</td>
+                      <td>
+                        <button type="button" onClick={() => openEditMaterial(material)}
+                          disabled={deletingMaterialId !== null} style={{ marginRight: '8px' }}>Редактирай</button>
+                        <button type="button" onClick={() => void deleteMaterial(material)}
+                          disabled={deletingMaterialId !== null}>
+                          {deletingMaterialId === material.id ? 'Изтриване...' : 'Изтрий'}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>

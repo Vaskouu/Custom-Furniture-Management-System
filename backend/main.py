@@ -20,11 +20,13 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:5173",
         "http://127.0.0.1:5173",
+        "https://gratis-facility-landscapes-bee.trycloudflare.com",
     ],
     allow_credentials=False,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type"],
 )
+
 
 class CustomerCreate(BaseModel):
     name: str = Field(min_length=2, max_length=100)
@@ -47,6 +49,17 @@ class OrderUpdate(BaseModel):
     furniture_type: str = Field(min_length=2, max_length=100)
     description: str | None = None
     status: str = Field(min_length=2, max_length=50)
+
+class MaterialCreate(BaseModel):
+    name: str = Field(min_length=2, max_length=100)
+    unit: str = Field(min_length=1, max_length=20)
+    price_per_unit: float = Field(gt=0)
+
+
+class MaterialUpdate(BaseModel):
+    name: str = Field(min_length=2, max_length=100)
+    unit: str = Field(min_length=1, max_length=20)
+    price_per_unit: float = Field(gt=0)
 
 class OrderMaterialCreate(BaseModel):
     order_id: int = Field(gt=0)
@@ -554,6 +567,130 @@ def get_materials():
         print("DATABASE ERROR:", error)
         raise HTTPException(status_code=500, detail="Failed to retrieve materials")
 
+@app.post(
+    "/materials",
+    status_code=201,
+    dependencies=[Depends(require_staff)]
+)
+def create_material(material: MaterialCreate):
+    try:
+        with engine.begin() as connection:
+            result = connection.execute(
+                text("""
+                    INSERT INTO materials (name, unit, price_per_unit)
+                    VALUES (:name, :unit, :price_per_unit)
+                    RETURNING id, name, unit, price_per_unit
+                """),
+                {
+                    "name": material.name,
+                    "unit": material.unit,
+                    "price_per_unit": material.price_per_unit,
+                }
+            ).mappings().first()
+
+            return dict(result)
+
+    except SQLAlchemyError as error:
+        print("DATABASE ERROR:", error)
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to create material"
+        )
+
+@app.put(
+    "/materials/{material_id}",
+    dependencies=[Depends(require_staff)]
+)
+def update_material(material_id: int, material: MaterialUpdate):
+    try:
+        with engine.begin() as connection:
+            result = connection.execute(
+                text("""
+                    UPDATE materials
+                    SET name = :name,
+                        unit = :unit,
+                        price_per_unit = :price_per_unit
+                    WHERE id = :material_id
+                    RETURNING id, name, unit, price_per_unit
+                """),
+                {
+                    "material_id": material_id,
+                    "name": material.name,
+                    "unit": material.unit,
+                    "price_per_unit": material.price_per_unit,
+                }
+            ).mappings().first()
+
+            if result is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail="Material not found"
+                )
+
+            return dict(result)
+
+    except HTTPException:
+        raise
+    except SQLAlchemyError as error:
+        print("DATABASE ERROR:", error)
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to update material"
+        )
+
+@app.delete(
+    "/materials/{material_id}",
+    dependencies=[Depends(require_staff)]
+)
+def delete_material(material_id: int):
+    try:
+        with engine.begin() as connection:
+            result = connection.execute(
+                text("""
+                    DELETE FROM materials
+                    WHERE id = :material_id
+                      AND NOT EXISTS (
+                          SELECT 1
+                          FROM order_materials
+                          WHERE material_id = :material_id
+                      )
+                    RETURNING id
+                """),
+                {"material_id": material_id}
+            ).first()
+
+            if result is None:
+                exists = connection.execute(
+                    text("SELECT id FROM materials WHERE id = :material_id"),
+                    {"material_id": material_id}
+                ).first()
+
+                if exists is None:
+                    raise HTTPException(
+                        status_code=404,
+                        detail="Material not found"
+                    )
+
+                raise HTTPException(
+                    status_code=409,
+                    detail="Material is used in an order and cannot be deleted"
+                )
+
+            return {"message": "Material deleted successfully"}
+
+    except HTTPException:
+        raise
+    except IntegrityError:
+        raise HTTPException(
+            status_code=409,
+            detail="Material cannot be deleted because it is referenced"
+        )
+    except SQLAlchemyError as error:
+        print("DATABASE ERROR:", error)
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to delete material"
+        )
 
 @app.get("/order-materials", dependencies=[Depends(require_staff)])
 def get_order_materials():
@@ -829,3 +966,5 @@ def create_user(
             status_code=500,
             detail="Database error while creating user"
         )
+
+
