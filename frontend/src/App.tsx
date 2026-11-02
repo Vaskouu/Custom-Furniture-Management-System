@@ -4,6 +4,9 @@ import CustomerForm, { type CustomerData } from './components/CustomerForm'
 import OrderForm, { type OrderData } from './components/OrderForm'
 import MaterialForm, { type MaterialData } from './components/MaterialForm'
 import './App.css'
+import OrderMaterialForm, {
+  type OrderMaterialData,
+} from './components/OrderMaterialForm'
 
 type Page = 'dashboard' | 'customers' | 'orders' | 'materials'
 
@@ -17,6 +20,18 @@ type Order = {
   description: string | null
   status: string
   customer_id?: number
+}
+
+type OrderMaterial = {
+  id: number
+  order_id: number
+  material_id: number
+  customer: string
+  furniture_type: string
+  material_name: string
+  unit: string
+  price_per_unit: number
+  quantity: number
 }
 
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000"
@@ -35,6 +50,12 @@ function App() {
   const [deletingCustomerId, setDeletingCustomerId] = useState<number | null>(null)
 
   const [orders, setOrders] = useState<Order[]>([])
+  const [orderMaterials, setOrderMaterials] = useState<OrderMaterial[]>([])
+  const [orderMaterialsLoading, setOrderMaterialsLoading] = useState(false)
+  const [orderMaterialsError, setOrderMaterialsError] = useState('')
+  const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null)
+  const [editingOrderMaterialId, setEditingOrderMaterialId] = useState<number | null>(null)
+  const [deletingOrderMaterialId, setDeletingOrderMaterialId] = useState<number | null>(null)
   const [ordersLoading, setOrdersLoading] = useState(false)
   const [ordersError, setOrdersError] = useState('')
   const [orderActionError, setOrderActionError] = useState('')
@@ -65,9 +86,14 @@ function App() {
     setUser(null)
     setCustomers([])
     setOrders([])
+    setOrderMaterials([])
+    setOrderMaterialsError('')
     setMaterials([])
     setMaterialsError('')
     setMaterialActionError('')
+    setSelectedOrderId(null)
+    setEditingOrderMaterialId(null)
+    setDeletingOrderMaterialId(null)
     setShowMaterialForm(false)
     setEditingMaterial(null)
     setDeletingMaterialId(null)
@@ -163,6 +189,170 @@ function App() {
     void loadOrders()
     return () => controller.abort()
   }, [token, isStaff])
+
+  function closeOrderMaterialForm() {
+  setSelectedOrderId(null)
+  setEditingOrderMaterialId(null)
+}
+
+function openAddOrderMaterial(orderId: number) {
+  setEditingOrderMaterialId(null)
+  setSelectedOrderId(orderId)
+  setOrderMaterialsError('')
+}
+
+function openEditOrderMaterial(item: OrderMaterial) {
+  setSelectedOrderId(item.order_id)
+  setEditingOrderMaterialId(item.id)
+  setOrderMaterialsError('')
+}
+
+async function saveOrderMaterial(data: OrderMaterialData) {
+  if (!token || !isStaff) {
+    throw new Error('Нямате достъп до тази операция.')
+  }
+
+  const isEditing = editingOrderMaterialId !== null
+
+  const response = await fetch(
+    isEditing
+      ? `${API_URL}/order-materials/${editingOrderMaterialId}`
+      : `${API_URL}/order-materials`,
+    {
+      method: isEditing ? 'PUT' : 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    }
+  )
+
+  if (!response.ok) {
+    throw new Error(
+      response.status === 401 || response.status === 403
+        ? 'Нямате право да управлявате материалите.'
+        : `Неуспешно запазване на материала (HTTP ${response.status}).`
+    )
+  }
+
+  try {
+    const updated = await fetchOrderMaterials(token)
+    setOrderMaterials(updated)
+    setOrderMaterialsError('')
+  } catch {
+    setOrderMaterialsError(
+      'Материалът е запазен, но списъкът не се обнови.'
+    )
+  }
+
+  closeOrderMaterialForm()
+}
+
+async function deleteOrderMaterial(item: OrderMaterial) {
+  if (!token || !isStaff || deletingOrderMaterialId !== null) return
+
+  if (!window.confirm(
+    `Сигурни ли сте, че искате да премахнете "${item.material_name}" от поръчка №${item.order_id}?`
+  )) {
+    return
+  }
+
+  setDeletingOrderMaterialId(item.id)
+  setOrderMaterialsError('')
+
+  try {
+    const response = await fetch(
+      `${API_URL}/order-materials/${item.id}`,
+      {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    )
+
+    if (!response.ok) {
+      throw new Error(
+        `Неуспешно изтриване (HTTP ${response.status}).`
+      )
+    }
+
+    setOrderMaterials((previous) =>
+      previous.filter((row) => row.id !== item.id)
+    )
+
+    if (editingOrderMaterialId === item.id) {
+      closeOrderMaterialForm()
+    }
+  } catch (err) {
+    setOrderMaterialsError(
+      err instanceof Error
+        ? err.message
+        : 'Грешка при изтриването.'
+    )
+  } finally {
+    setDeletingOrderMaterialId(null)
+  }
+}
+
+
+  async function fetchOrderMaterials(
+  accessToken: string,
+  signal?: AbortSignal
+) {
+  const response = await fetch(`${API_URL}/order-materials`, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+    signal,
+  })
+  
+  if (!response.ok) {
+    throw new Error(
+      response.status === 401 || response.status === 403
+        ? 'Нямате достъп до материалите на поръчките.'
+        : 'Неуспешно зареждане на материалите към поръчките.'
+    )
+  }
+
+  return (await response.json()) as OrderMaterial[]
+}
+
+useEffect(() => {
+  if (!token || !isStaff) return
+
+  const controller = new AbortController()
+
+  async function loadOrderMaterials() {
+    setOrderMaterialsLoading(true)
+    setOrderMaterialsError('')
+
+    try {
+      const data = await fetchOrderMaterials(token!, controller.signal)
+
+      if (!controller.signal.aborted) {
+        setOrderMaterials(data)
+      }
+    } catch (err) {
+      if (!controller.signal.aborted) {
+        setOrderMaterialsError(
+          err instanceof Error
+            ? err.message
+            : 'Грешка при връзката с FastAPI.'
+        )
+      }
+    } finally {
+      if (!controller.signal.aborted) {
+        setOrderMaterialsLoading(false)
+      }
+    }
+  }
+
+  void loadOrderMaterials()
+
+  return () => controller.abort()
+}, [token, isStaff])
 
   async function fetchMaterials(accessToken: string, signal?: AbortSignal) {
     const response = await fetch(`${API_URL}/materials`, {
@@ -642,6 +832,90 @@ function App() {
               <p role="alert" style={{ color: '#b42318' }}>{orderActionError}</p>
             )}
 
+<div style={{ marginBottom: '24px' }}>
+  <h3>Материали към поръчките</h3>
+
+{selectedOrderId !== null && (
+  <div style={{ marginBottom: '20px' }}>
+    <OrderMaterialForm
+      key={`${selectedOrderId}-${editingOrderMaterialId ?? 'new'}`}
+      orderId={selectedOrderId}
+      materials={materials}
+      initialData={
+        editingOrderMaterialId !== null
+          ? (() => {
+              const item = orderMaterials.find(
+                (row) => row.id === editingOrderMaterialId
+              )
+              return item
+                ? {
+                    order_id: item.order_id,
+                    material_id: item.material_id,
+                    quantity: item.quantity,
+                  }
+                : undefined
+            })()
+          : undefined
+      }
+      onSave={saveOrderMaterial}
+      onCancel={closeOrderMaterialForm}
+    />
+  </div>
+)}
+
+  {orderMaterialsLoading ? (
+    <p>Зареждане на материалите...</p>
+  ) : orderMaterialsError ? (
+    <p role="alert" style={{ color: '#b42318' }}>
+      {orderMaterialsError}
+    </p>
+  ) : orderMaterials.length === 0 ? (
+    <p>Все още няма добавени материали към поръчките.</p>
+  ) : (
+    <div className="table-container">
+      <table className="customers-table">
+        <thead>
+          <tr>
+            <th>Поръчка №</th>
+            <th>Материал</th>
+            <th>Количество</th>
+            <th>Единична цена</th>
+            <th>Действия</th>
+          </tr>
+        </thead>
+        <tbody>
+          {orderMaterials.map((item) => (
+            <tr key={item.id}>
+              <td>{item.order_id}</td>
+              <td>{item.material_name}</td>
+              <td>{item.quantity} {item.unit}</td>
+              <td>{Number(item.price_per_unit).toFixed(2)} €</td>
+              <td>
+  <button
+    type="button"
+    onClick={() => openEditOrderMaterial(item)}
+    disabled={selectedOrderId !== null || deletingOrderMaterialId !== null}
+    style={{ marginRight: '8px' }}
+  >
+    Редактирай
+  </button>
+
+  <button
+    type="button"
+    onClick={() => void deleteOrderMaterial(item)}
+    disabled={selectedOrderId !== null || deletingOrderMaterialId !== null}
+  >
+    {deletingOrderMaterialId === item.id ? 'Премахване...' : 'Премахни'}
+  </button>
+</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )}
+</div>
+
             <div className="table-container">
               <table className="customers-table">
                 <thead>
@@ -682,6 +956,16 @@ function App() {
                           </span>
                         </td>
                         <td>
+                          
+                          <button
+                            type="button"
+                            onClick={() => openAddOrderMaterial(order.id)}
+                            disabled={selectedOrderId !== null}
+                            style={{ marginRight: '8px' }}
+                          >
+                            + Материал
+                          </button>
+
                           <button
                             type="button"
                             onClick={() => void openEditOrder(order)}
@@ -690,6 +974,7 @@ function App() {
                           >
                             {loadingOrderId === order.id ? 'Зареждане...' : 'Редактирай'}
                           </button>
+                          
                           <button
                             type="button"
                             onClick={() => void deleteOrder(order)}
