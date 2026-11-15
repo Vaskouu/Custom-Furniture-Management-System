@@ -1,0 +1,14 @@
+export type StudioRole='admin'|'worker';
+export type OrderStatus='Нова'|'В процес'|'Завършена'|'Отказана';
+export const orderStatuses:OrderStatus[]=['Нова','В процес','Завършена','Отказана'];
+export type Dimensions={w:number;d:number;h:number};
+export type Customer={id:string;name:string;email:string;phone:string;city:string;address:string;notes:string;createdAt:string};
+export type MaterialUnit='м²'|'л.м.'|'бр.'|'кг'|'л';
+export type Material={id:string;sku:string;name:string;category:string;unit:MaterialUnit;stock:number;minimum:number;color:string;supplier:string;notes:string};
+export type MaterialAllocation={materialId:string;quantity:number};
+export type StatusEvent={id:string;status:OrderStatus;at:string;actor:string;note:string};
+export type StudioOrder={id:string;number:string;customerId:string;title:string;furnitureType:string;description:string;dimensions:Dimensions;quantity:number;status:OrderStatus;dueDate:string;createdAt:string;amount:number;assignedTo:string;materials:MaterialAllocation[];notes:string;history:StatusEvent[]};
+export type StudioUser={password?:string;id:string;name:string;username:string;email:string;role:StudioRole;active:boolean};
+export type StudioState={version:1;customers:Customer[];orders:StudioOrder[];materials:Material[];users:StudioUser[]};
+export type Section='dashboard'|'orders'|'customers'|'products'|'materials'|'inquiries'|'users'|'portfolio'|'settings';
+export type StudioAction='read'|'customer.write'|'order.write'|'order.status'|'material.write'|'catalog.write'|'user.write';
