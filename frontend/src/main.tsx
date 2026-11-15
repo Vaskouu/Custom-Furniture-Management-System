@@ -1,10 +1,4 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
-import App from './App.tsx'
-
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-)
+import {DecorationProvider} from './features/catalog/Decorations';
+import './features/catalog/refinements.css';
+import React from 'react';import{createRoot}from'react-dom/client';import App from './App';import{StoreProvider}from'./store';import './styles.css';import './features/catalog/catalog.css';import './features/studio/studio.css';import './features/studio/blue-theme.css';import './features/design/design.css';import './features/kitchen/kitchen.css';import './features/catalog/product-images.css';import './features/projects/projects.css';import {StudioProvider} from './features/studio/StudioContext';
+createRoot(document.getElementById('root')!).render(<React.StrictMode><DecorationProvider><StoreProvider><StudioProvider><App/></StudioProvider></StoreProvider></DecorationProvider></React.StrictMode>);
