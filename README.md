@@ -1,161 +1,183 @@
-# FurniPro — Custom Furniture Management System
+# FurniPro — мебели по поръчка
 
-FurniPro is a web application for managing custom furniture orders, customers, and materials. It is being developed as a **12th-grade graduation project in Applied Programming**.
+**Дипломен проект · React + TypeScript · Python + FastAPI · PostgreSQL**
 
-The project is currently focused on its **administration system**. A public furniture website and product configurator are planned for later development; they are **not yet part of the completed application**.
+[Ориентир в проекта](docs/PROJECT_MAP.md) · [Таблици и миграции](backend/sql/README.md)
 
-## Current Development Status
+FurniPro е моят дипломен проект — уеб система, която подпомага работата с мебели по поръчка. Целта е да свърже избора на клиента с работата на студиото: от разглеждане и конфигуриране на мебел до запитване, производствена поръчка и необходимите материали.
 
-**In development — intermediate demo: November 4, 2026.**
+Административното табло е основата на проекта. Върху него е надградена клиентска част с каталог, конфигуратор, регистрация и изпращане на запитвания. Приложението е работеща локална разработка; цените и пространствените модели са ориентировъчни. Няма завършен процес за онлайн плащане и автоматична покупка.
 
-### Implemented
+## Състояние към 14 ноември 2026 г.
 
-- Administrative interface built with React and TypeScript.
-- Customer management: view, create, edit, and delete customer records.
-- Order management: view, create, edit, and delete furniture orders.
-- Material management: view, create, edit, and delete materials.
-- Order–material management: assign materials and quantities to orders, and edit or remove those assignments.
-- PostgreSQL database integration with relationships between customers, orders, and materials.
-- User login, password hashing, and JWT-based authentication.
-- Role-based API access control (`admin`, `designer`, and `client`).
-- Administrative API endpoints for user management.
-- API documentation through FastAPI's `/docs` page.
-- `/health` endpoint for checking API and database connectivity.
-
-### Verified So Far
-
-- The frontend builds successfully with `npm run build`.
-- The `/health` endpoint has confirmed that the API is online and the PostgreSQL connection is working.
-
-These checks do not mean every workflow has been fully tested or that the application is ready for production.
-
-## Technology Stack
-
-| Area | Technologies |
+| Показател | Стойност |
 | --- | --- |
-| Frontend | React, TypeScript, Vite, HTML, CSS |
-| Backend | Python, FastAPI, SQLAlchemy, Pydantic |
-| Database | PostgreSQL |
-| Authentication | Password hashing, JSON Web Tokens (JWT) |
-| Development tools | Visual Studio Code, Git, GitHub, pgAdmin, Trello |
+| Общ брой физически редове изходен код | **5 397** |
+| Backend | 2 307 реда |
+| Frontend | 3 064 реда |
+| Помощни скриптове | 26 реда |
+| PostgreSQL таблици | **13 общо: 12 приложни + 1 служебна** |
+| Номерирани SQL миграции | **13**, в `backend/sql/` |
+| Начални модели мебели | **68** |
+| Начални кухненски модели | **10** |
+| Роли в базата | `admin`, `designer`, `client` |
 
-## Architecture
+Статистиката описва **текущото локално работно копие**, което съдържа непубликувани промени. Не означава, че всички описани файлове вече са налични в GitHub.
 
-The application follows a client–server architecture:
+Броят редове се възпроизвежда от корена с `.\backend\.venv\Scripts\python.exe scripts/project_stats.py`. Включва физическите редове, празните редове, коментарите и тестовете в Python, TypeScript/TSX, JavaScript/MJS, CSS, SQL, HTML и PowerShell. Изключва зависимости, архиви, `.reference`, компилирани файлове, генерирани декларации, JSON данни, lock файлове и документация. Това измерва обема, а не качеството; част от TSX кода е компактно форматирана.
+
+## От документацията за допускане до сегашната версия
+
+В документацията, обхващаща разработеното **до 2 ноември 2026 г.**, фокусът е административното табло: добавяне, преглед, редактиране и изтриване на клиенти, поръчки и материали; задаване на материали с количество към поръчка; вход и проверка на роли. Каталогът, конфигураторът и самостоятелните клиентски заявки тогава са описани като бъдещи етапи.
+
+Това историческо описание остава вярно за съответната дата. В настоящото локално копие тези клиентски възможности вече са реализирани и се доработват. Интерфейсът е React и TypeScript, сървърът е Python с FastAPI, а данните се пазят в PostgreSQL. Фронтендът е интегриран от предоставения готов проект и адаптиран към съществуващия backend; оригиналните CRUD маршрути и основни таблици са запазени.
+
+## Функционалности
+
+| Област | Възможности |
+| --- | --- |
+| Каталог | Категории, търсене, филтри, сортиране, продуктови изображения, размери и начални модели |
+| Мебелен конфигуратор | Размери, материал, цвят, покритие, дебелина, кант, дръжки, врати, рафтове, чекмеджета и принадлежности според модела |
+| Визуализация | Илюстративен пространствен модел, друг изглед, вътрешно разпределение, огледала по врати и различни нюанси |
+| Специални настройки | Места и страна на лежанката при диваните; чекмеджета при бюрата; форма на масите; брой долни врати при секциите |
+| Детски мебели | Всеки модул се редактира отделно: отворен, с плътна или стъклена вратичка; индивидуален цвят на фасадата/рамката |
+| Конфигурации | Сравнение, дублиране, запазване в профил, ориентировъчна цена, количество, доставка и монтаж, преминаване към запитване |
+| Кухненски планировчик | 10 начални модела, размери и форма, стени и модули, разполагане на уреди, проверки за застъпване и различни изгледи |
+| Клиентски профил | Регистрация с име, имейл, телефон и парола, вход, собствени конфигурации и запитвания |
+| Любими | Добавяне/премахване със сърце; PostgreSQL съхранение за конкретния акаунт; запазване след изход и повторен вход |
+| Запитвания | Контакти, описание, размери, материал, бюджет, конфигурация и прикачено изображение; гост също може да изпрати запитване |
+| Публични страници | Представяне на студиото, портфолио с проекти, материали и контакти |
+| Административно табло | Обобщения, статуси и диаграма на поръчките |
+| Клиенти и поръчки | CRUD, клиент към поръчка, размери, срокове, назначения и статуси |
+| Материали | CRUD, количества към поръчка, складова наличност и проверки при резервиране |
+| Управление | Продуктов каталог, потребители и роли, запитвания и вътрешни бележки, портфолио, декори и ценови настройки |
+| Контрол на достъпа | Проверки на роли и собственост в API, хеширани пароли, JWT, HttpOnly сесийна cookie за клиентския API, история на действията |
+
+Стъклените/цветни модули се запазват с конфигурацията. Точната производствена спецификация и отделното ценообразуване на всяка фасада остават за следващо доработване.
+
+## Технологии и архитектура
+
+| Слой | Технологии |
+| --- | --- |
+| Интерфейс | React, TypeScript, Vite, HTML, CSS, SVG визуализации |
+| API | Python, FastAPI, Pydantic |
+| Данни | PostgreSQL, SQLAlchemy, SQL миграции |
+| Удостоверяване | Хеширане на пароли, JWT, роли и сесийни cookies |
+| Проверки | Node test runner, esbuild, pytest, FastAPI TestClient, PostgreSQL проверки |
+| Инструменти | Visual Studio Code, Git, GitHub, pgAdmin |
 
 ```text
-User in browser
-      |
-      v
-React + TypeScript frontend
-      | HTTP / JSON
-      v
-FastAPI backend
-      | SQLAlchemy / SQL
-      v
-PostgreSQL database
+Браузър → React / TypeScript → HTTP / JSON → FastAPI → SQLAlchemy → PostgreSQL
 ```
 
-The frontend handles forms, tables, navigation, and user interactions. The backend validates requests, checks permissions, and reads or updates records in PostgreSQL.
-
-### Main Project Files
-
-```text
-FurniPro/
-├── backend/
-│   ├── main.py          # API routes and application logic
-│   ├── auth.py          # Password verification and JWT handling
-│   └── database.py      # PostgreSQL connection configuration
-└── frontend/
-    └── src/
-        └── App.tsx      # Main administrative interface and state
-```
-
-This is a simplified overview, not the complete folder structure.
-
-## Database Relationships
-
-The implemented system includes these core relationships:
-
-- **Customers → Orders:** one customer can have multiple orders (`orders.customer_id` → `customers.id`).
-- **Orders → Order Materials:** each order can include multiple material entries.
-- **Materials → Order Materials:** the same material can be used in multiple orders.
-
-The `order_materials` table connects orders with materials and stores the required quantity for each entry.
-
-## API Overview
-
-The backend provides endpoints for:
-
-| Resource | Main operations |
+| Папка / файл | Предназначение |
 | --- | --- |
-| `/customers` | Customer CRUD |
-| `/orders` | Order CRUD |
-| `/materials` | Material CRUD |
-| `/order-materials` | Manage materials assigned to orders |
-| `/auth/login` | User authentication |
-| `/auth/me` | Information about the signed-in user |
-| `/users` | Administrative user management |
-| `/health` | API and database health check |
+| `frontend/src/features/configurator/` | Конфигуратор, геометрия и опции |
+| `frontend/src/features/catalog/` | Каталог и изображения |
+| `frontend/src/features/kitchen/` | Кухни и планировчик |
+| `frontend/src/features/account/` | Регистрация и профил |
+| `frontend/src/features/inquiries/` | Клиентско запитване |
+| `frontend/src/features/studio/` | Административното студио |
+| `backend/main.py` | Оригиналните CRUD маршрути |
+| `backend/public_api.py`, `studio_api.py` | Клиентски API и интеграция на студиото |
+| `backend/sql/` | Номерирани миграции и описание на таблиците |
+| `docs/` | Ориентир в проекта |
+| `FurniPro.code-workspace` | Подреден Explorer във VS Code |
 
-The exact request and response schemas can be viewed at **`http://127.0.0.1:8000/docs`** when the backend is running.
+## База данни
 
-## Running the Project Locally
+| Таблица | Предназначение |
+| --- | --- |
+| `users` | Профили, хеширани пароли и роли |
+| `customers` | Клиенти |
+| `orders` | Производствени поръчки |
+| `materials` | Материали |
+| `order_materials` | Материал и количество към поръчка |
+| `fp_products` | Продуктов каталог |
+| `fp_configurations` | Запазени конфигурации |
+| `fp_inquiries` | Клиентски запитвания |
+| `fp_resources` | Настройки, портфолио и разширени данни на студиото |
+| `fp_audit` | История на действията |
+| `fp_order_links` | Подготвена връзка запитване–поръчка; още не се попълва от интерфейса |
+| `fp_favorites` | Любими продукти за потребител; съставен ключ и външни ключове |
+| `schema_migrations` | Служебен регистър на изпълнените миграции и контролните им суми |
 
-**Requirements:** Python, Node.js with npm, PostgreSQL, and the project's configured database tables and environment variables.
+Клиентът може да има много поръчки. Поръчките и материалите са свързани много-към-много чрез `order_materials`. Любимите свързват `users` и `fp_products` и се премахват при изтриване на съответния запис. Част от разширените данни са JSON текст в `payload`; те не са отделни релационни таблици. `fp_order_links.legacy_order_id` още няма външен ключ към `orders`.
 
-### 1. Backend
+**13 номерирани миграции** управляват PostgreSQL схемата. `bootstrap/schema_migrations.sql` е допълнителен помощен файл — общо 14 структурни SQL файла. Миграция не означава непременно нова таблица: `006` добавя колони към `users`. Подробностите са в [описа на миграциите](backend/sql/README.md).
 
-Open a terminal in the `backend` directory. Make sure the project's Python virtual environment and dependencies are installed, and configure the database connection and authentication settings in your local `.env` file.
+## Стартиране след включване на компютъра
 
-On Windows, start FastAPI with:
+PostgreSQL трябва да работи. От корена отвори два PowerShell терминала и ги остави отворени.
+
+**Backend:**
 
 ```powershell
 cd backend
 .\.venv\Scripts\python.exe -m uvicorn main:app --reload
 ```
 
-Wait for `Application startup complete`, then open:
-
-- API docs: `http://127.0.0.1:8000/docs`
-- Health check: `http://127.0.0.1:8000/health`
-
-### 2. Frontend
-
-Open a second terminal:
+**Frontend:**
 
 ```powershell
 cd frontend
-npm install
 npm run dev
 ```
 
-Open the local address displayed by Vite (usually `http://localhost:5173`). If the backend runs at a different URL, configure `VITE_API_URL` accordingly.
+Отвори [FurniPro — localhost:5173](http://localhost:5173). Vite препраща `/api` към `127.0.0.1:8000`.
 
-**Security:** Do not commit `.env` files, database passwords, or JWT secrets to GitHub.
+При първа инсталация създай `backend/.venv`, инсталирай `backend/requirements.txt` и изпълни `npm install` в `frontend`. Копирай `.env.example` в локален `.env` и попълни PostgreSQL връзката, ключовете и разрешените адреси. Не публикувай `.env`. `python manage.py init` прилага миграциите и внася началните данни. При следващо стартиране те не заменят редактирания каталог.
 
-## Planned Development
+| Команда от `backend` с активирана виртуална среда | Действие |
+| --- | --- |
+| `python manage.py migration-status` | Показва изпълнените и чакащите миграции |
+| `python manage.py migrate` | Прилага чакащите миграции |
+| `python manage.py init` | Инициализация и начални данни |
+| `python manage.py create-admin` | Създава администратор чрез интерактивно въвеждане |
 
-The next development stages may include:
+## Профили и роли
 
-- Public website with home page, furniture catalog, team information, and contact page.
-- Custom furniture configurator with dimensions, materials, colors, and component placement.
-- Product and category management connected to the database.
-- Customer accounts, quote requests, and order tracking.
-- Estimated price calculation for furniture configurations.
-- Extended administrative features, testing, and deployment improvements.
+| Роля | Достъп |
+| --- | --- |
+| Гост | Каталог, конфигуратор и изпращане на запитване; за любими и запазване е нужен профил |
+| `client` | Клиентски профил, собствени любими, конфигурации и запитвания |
+| `designer` | Вход като човек от екипа; табло, поръчки и материали; промяна на статуси в студиото |
+| `admin` | Управление на ресурсите, потребителите и настройките |
 
-These features are **planned**, not claimed as implemented.
+Менюто показва „Вход/Регистрация“, а след вход — името на потребителя с инициала на фамилията. Регистрацията е на `/#register`; публичният вход е с имейл и парола, а входът за екипа приема потребителско име или имейл. Публичната регистрация винаги създава клиент. Пароли на реални и демонстрационни акаунти не се публикуват тук.
 
-## Development Workflow
+`VITE_DEMO=true` включва изричен браузърен демо режим. По подразбиране приложението използва API и PostgreSQL. При отделен API хост се настройва `VITE_API_URL`.
 
-Development is tracked with Git and GitHub. Changes are organized into small, meaningful commits, with tasks and priorities managed through Trello.
+## API и проверки
 
-The current repository is the foundation for the final project. Future work will build on the existing React, FastAPI, and PostgreSQL code rather than replacing the application from scratch.
+| Маршрути | Област |
+| --- | --- |
+| `/customers`, `/orders`, `/materials`, `/order-materials` | Оригиналното CRUD управление |
+| `/users`, `/auth/login`, `/auth/me` | Оригинален вход с Bearer JWT и роли |
+| `/api/auth/*`, `/api/favorites`, `/api/configurations` | Профили и лични данни |
+| `/api/products`, `/api/library`, `/api/inquiries` | Каталог, настройки и запитвания |
+| `/api/studio/*` | Административното студио |
+| `/health` | Проверка на API и връзката с базата |
 
-## Project Information
+Документация при работещ backend: [оригинален API](http://127.0.0.1:8000/docs) и [клиентски API](http://127.0.0.1:8000/api/docs).
 
-- **Project:** FurniPro
-- **Type:** 12th-grade Graduation Project — Applied Programming
-- **Current stage:** Working administrative foundation; further development in progress
-- **Repository:** https://github.com/Vaskouu/Custom-Furniture-Management-System
+```powershell
+cd backend
+.\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
+.\.venv\Scripts\python.exe -m pytest test_public_api.py -q
+.\.venv\Scripts\python.exe verify_migrations.py
+cd ../frontend
+npm test
+npm run build
+```
+
+API тестовете използват временна SQLite база. Проверяват роли, собственост, регистрация, любими, запитвания, CRUD и складови ограничения. PostgreSQL проверката използва отделна временна схема и проверява миграциите отначало, повторно изпълнение, контролни суми и отмяна при грешка. Фронтенд тестовете проверяват геометрия, огледала, модули, LED осветление, кухненски разпределения, цени и правилата на студиото.
+
+## Следващи етапи
+
+- Допълнително визуално изпипване и ръчно приемане на мебелните варианти.
+- По-точни производствени спецификации и цени за индивидуалните фасади.
+- Нормализация на JSON данните и завършване на връзката запитване–поръчка.
+- Реални фирмени контакти, публикуване, HTTPS, `COOKIE_SECURE=true`, `FRONTEND_ORIGINS` и reverse proxy за `/api`.
+
+`npm run build` създава `frontend/dist`. Vite proxy е за разработка; публикуването изисква отделна сървърна конфигурация. Някои общи изображения и шрифтове използват външни услуги.

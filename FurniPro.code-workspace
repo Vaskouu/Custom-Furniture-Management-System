@@ -1,0 +1,15 @@
+{
+  "folders": [{"name": "FurniPro", "path": "."}],
+  "settings": {
+    "files.exclude": {
+      "**/node_modules": true,
+      "**/.venv": true,
+      "**/__pycache__": true,
+      "**/.pytest_cache": true,
+      "**/dist": true,
+      "**/*.tsbuildinfo": true,
+      ".reference": true
+    },
+    "explorer.compactFolders": false
+  }
+}

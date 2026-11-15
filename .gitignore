@@ -20,3 +20,8 @@ coverage/
 
 # Logs
 *.log
+# Local import reference and original files
+.reference/
+*.tsbuildinfo
+
+.pytest_cache/
