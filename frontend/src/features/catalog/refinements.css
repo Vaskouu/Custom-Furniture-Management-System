@@ -1,0 +1,25 @@
+.decoration-toggle{display:inline-flex;max-width:100%;gap:3px;padding:4px;border:1px solid #b9bead;background:#efede4;border-radius:6px;margin:14px 0 18px}
+.decoration-toggle>button{display:flex;align-items:center;justify-content:center;gap:7px;padding:10px 14px;background:transparent;border:1px solid transparent;border-radius:3px;color:#6a735f;font:500 10px Manrope,Arial,sans-serif;transition:background .2s,color .2s,box-shadow .2s;white-space:nowrap}
+.decoration-toggle>button[aria-pressed=true]{background:#fbf9f2;border-color:#c8ccbe;color:#33422f;box-shadow:0 2px 5px #2832250d}
+.decoration-toggle>button:hover{color:#2c3e2a;background:#faf8f0}
+.decoration-toggle>button:focus-visible,.mirror-doors>button:focus-visible{outline:2px solid #586c4a;outline-offset:3px}
+.decoration-toggle>button>span{font-size:17px;line-height:1}
+.catalog-collection-tabs+.decoration-toggle{margin:2px 0 18px}
+.detail-visual>.decoration-toggle{display:flex;width:max-content;margin:16px auto}
+.preview-panel .decoration-toggle{margin:12px 0 4px}
+.design-preview-sticky>.furniture-svg{filter:drop-shadow(0 5px 8px #30402d08);width:100%;max-height:460px}
+.mirror-controls .mirror-doors{display:grid;grid-template-columns:repeat(auto-fit,minmax(74px,1fr));gap:8px;margin:19px 0 12px}
+.mirror-doors>button{display:flex;flex-direction:column;align-items:center;gap:8px;min-width:0;padding:12px 5px;background:#f4f1e7;border:1px solid #d1d4c5;border-radius:3px;font:600 10px Manrope,Arial,sans-serif;color:#64705a;transition:border-color .2s,background .2s}
+.mirror-doors>button[aria-pressed=true]{border:1px solid #596f4c;background:#e6e9dd;color:#34462c}
+.mirror-doors>button>small{font-size:8px;font-weight:400}
+.door-sample{position:relative;display:block;width:40px;height:69px;background:repeating-linear-gradient(91deg,#bd9b74,#bea07b 2px,#b99870 4px);border:3px solid #a78a66;box-shadow:3px 3px 0 #5a654019}
+.door-sample.mirrored{background:linear-gradient(135deg,#b5c8c9 3%,#eef2e8 36%,#9db4b5 43%,#dee9e6 78%,#9fb6b7)}
+.door-sample>i{display:block;position:absolute;width:2px;height:14px;right:4px;top:28px;background:#57625c}
+.mirror-quick-actions{display:flex;flex-wrap:wrap;gap:18px;margin:12px 0 24px}
+.mirror-quick-actions>button{border:0;border-bottom:1px solid #a7b39a;padding:3px 0;background:none;font-size:10px;color:#506143}
+.mirror-spec-summary{padding:11px 13px;border-left:2px solid #8a9a79;background:#e9ecdf;font-size:10px;line-height:1.7;color:#526047}
+.detailed-furniture{isolation:isolate}
+.config-editor-tabs button{white-space:nowrap}
+.design-options .config-editor-tabs{grid-template-columns:repeat(auto-fit,minmax(74px,1fr))}
+@media(max-width:600px){.decoration-toggle>button{padding:9px 11px;font-size:9px}.mirror-controls .mirror-doors{grid-template-columns:repeat(auto-fit,minmax(68px,1fr))}.design-preview-sticky>.furniture-svg{max-height:350px}.design-options .config-editor-tabs{display:flex;overflow-x:auto;flex-wrap:nowrap}.design-options .config-editor-tabs>button{flex:0 0 82px}.preview-panel .decoration-toggle{margin:14px 0 8px}}
+@media(prefers-reduced-motion:reduce){.decoration-toggle>button,.mirror-doors>button{transition:none}}
