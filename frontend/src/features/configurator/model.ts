@@ -1,0 +1,8 @@
+import {Config,Product,newConfig,palette} from '../../data';
+import {selectedMirrorDoors} from './presets';
+export const hardwarePalette=[{name:'Матово черно',hex:'#252b32'},{name:'Месинг',hex:'#b28a43'},{name:'Хром',hex:'#c7d0d8'},{name:'Мед',hex:'#b97655'},{name:'Бяло',hex:'#ecebe4'},{name:'Тъмносиньо',hex:'#254b71'},{name:'Изумруд',hex:'#267362'},{name:'Бордо',hex:'#783448'}];
+export const colorHex=(value:string|undefined,fallback='#ba936d')=>value?.startsWith('#')?value:palette.find(x=>x.name===value)?.hex||fallback;
+export function shade(hex:string,amount:number){const h=hex.replace('#','');if(h.length!==6)return hex;return '#'+[0,2,4].map(i=>Math.max(0,Math.min(255,parseInt(h.slice(i,i+2),16)+amount)).toString(16).padStart(2,'0')).join('')}
+export function normalizeConfig(value:Config,product:Product):Config{return {...newConfig(product),...value,decorations:false,handleColor:value.handleColor||(value.handles==='Месинг'?'#b28a43':'#252b32'),mirrorDoors:selectedMirrorDoors(product,{...newConfig(product),...value})}}
+export function handlePosition(width:number,height:number,c:Config,index=0){let x=c.handleHorizontal==='В центъра'?width*.5:c.handleHorizontal==='Към пантите'?(index%2?width-12:12):(index%2?12:width-12);if(c.direction==='Ляво')x=width-x;return {x,y:height*(c.handleVertical==='Високо'?.17:c.handleVertical==='Ниско'?.83:.5)}}
+export function silhouette(p:Product):string{const map:Record<string,string>={'Скринове':'dresser','Шкафове за обувки':'shoes','Офис шкафове':'office','Гардероби':'wardrobe','Нощни шкафчета':'nightstand','Секции за хол':'wall','Антре мебели':'hall','Баня мебели':'bath','Детски мебели':'kids','Кухненски шкафове':'kitchen','ТВ шкафове':'tv','Библиотеки':'shelf'};return map[p.category]||p.kind}
