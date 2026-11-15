@@ -12,20 +12,29 @@ from fastapi import Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from auth import decode_access_token
 from database import engine
+from contextlib import asynccontextmanager
+import public_api
+
+
+@asynccontextmanager
+async def lifespan(app):
+    public_api.initialize()
+    yield
 
 
 #suzdava se FastAPI servera i se nastroiva CORS za React.
-app = FastAPI(title="FurniPro API")
+app = FastAPI(title="FurniPro API", lifespan=lifespan)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
+    allow_origins=public_api.ORIGINS + [
         "http://localhost:5173",
         "http://127.0.0.1:5173",
-        "https://gratis-facility-landscapes-bee.trycloudflare.com",
+        "https://cliff-pads-rear-heroes.trycloudflare.com",
     ],
-    allow_credentials=False,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
@@ -100,7 +109,7 @@ def get_current_user(
                 text("""
                     SELECT id, username, email, role
                     FROM users
-                    WHERE id = :user_id
+                    WHERE id = :user_id AND active = TRUE
                 """),
                 {"user_id": user_id},
             ).mappings().first()
@@ -837,7 +846,7 @@ def login(data: LoginRequest):
                 text("""
                     SELECT id, username, password_hash, role
                     FROM users
-                    WHERE username = :username
+                    WHERE username = :username AND active = TRUE
                 """),
                 {"username": data.username},
             ).mappings().first()
@@ -962,3 +971,6 @@ def create_user(
         )
 
 
+
+# Public website and studio routes extend the original CRUD API.
+app.mount("/", public_api.app)

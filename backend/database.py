@@ -7,7 +7,7 @@ from sqlalchemy.engine import URL
 
 load_dotenv(Path(__file__).with_name(".env"))
 
-database_url = URL.create(
+database_url = os.getenv("DATABASE_URL") or URL.create(
     drivername="postgresql+psycopg",
     username=os.getenv("DB_USER"),
     password=os.getenv("DB_PASSWORD"),

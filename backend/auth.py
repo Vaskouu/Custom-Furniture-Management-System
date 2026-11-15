@@ -18,7 +18,7 @@ if not JWT_SECRET_KEY:
 
 password_hasher = PasswordHash.recommended()
 
-#proverqva dali vuvedenata parola suvpadа s hashiranata.
+#proverqva dali vuvedenata parola suvpadа s staq v bazata.
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return password_hasher.verify(plain_password, hashed_password)
 
