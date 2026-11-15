@@ -1,0 +1,43 @@
+.advanced-kitchen .kitchen-editor{padding:28px;min-width:0}
+.advanced-kitchen .kitchen-editor-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:3px;margin:0 0 27px;border-bottom:1px solid #c8cebc}
+.kitchen-editor-tabs>button{background:none;border:0;border-bottom:2px solid transparent;color:#7f8a70;padding:13px 4px;font-size:10px;line-height:1.4}
+.kitchen-editor-tabs>button.active{color:#425537;border-color:#5d7448;background:#e9edde;font-weight:600}
+.advanced-kitchen .editor-intro{margin-bottom:22px}.advanced-kitchen .editor-intro h3{font-size:29px}.advanced-kitchen .editor-intro p{font-size:11px;line-height:1.7}
+.advanced-kitchen .kitchen-view-tabs>button{padding:11px 3px;white-space:normal;font-size:9px}
+.kitchen-wall-tabs{display:flex;gap:7px;justify-content:center;margin:15px 0 4px;flex-wrap:wrap}
+.kitchen-wall-tabs>button{background:#f5f3eb;border:1px solid #c4cbb7;padding:8px 14px;display:flex;align-items:center;gap:10px;font-size:10px;color:#68765b}
+.kitchen-wall-tabs>button.active{background:#dfe6d2;border-color:#81966b;color:#405733}
+.kitchen-wall-tabs b{font-weight:600}.kitchen-wall-tabs small{font-size:9px;color:#82916e}
+.advanced-kitchen .kitchen-design-preview .detailed-kitchen{height:auto;max-height:460px;margin:12px 0}
+.advanced-kitchen .kitchen-design-preview .detailed-kitchen[data-view=walls]{max-height:580px}
+.kitchen-slot-hit{cursor:pointer;transition:stroke .15s,fill .15s;outline:none}.kitchen-slot-hit:hover,.kitchen-slot-hit:focus-visible{fill:#b7955525;stroke:#a5803d;stroke-dasharray:5 3}
+.kitchen-module-strip{display:flex;gap:5px;overflow-x:auto;padding:4px 1px 10px}
+.kitchen-module-strip>button{flex:1;min-width:57px;border:1px solid #bcc7ae;background:#f5f3e9;padding:9px 4px;color:#67765b;text-align:center;display:flex;flex-direction:column;gap:5px;align-items:center}
+.kitchen-module-strip>button.selected{background:#e4d9b8;border-color:#b28a44;box-shadow:inset 0 2px #b28a44}.kitchen-module-strip>button:hover{border-color:#7a9163;background:#e5ebdc}
+.kitchen-module-strip b{font-size:11px;font-weight:600}.kitchen-module-strip span{font-size:7px;line-height:1.5}
+.kitchen-move-help{display:flex;gap:8px;align-items:center;justify-content:center;font-size:9px;line-height:1.6;color:#71815e;margin:4px 0 15px}
+.appliance-list{display:grid;gap:10px;margin-bottom:25px}
+.appliance-list>article{border:1px solid #d1d7c7;background:#f9f7ef;padding:12px;transition:border-color .15s,background .15s}
+.appliance-list>article.selected{border-color:#809567;background:#edf1e4;box-shadow:inset 3px 0 #809567}
+.appliance-row-heading{display:flex;align-items:center;gap:9px;margin-bottom:10px}
+.appliance-select{display:flex;align-items:center;gap:10px;flex:1;min-width:0;background:none;border:0;padding:0;text-align:left;color:#3f5134;cursor:grab}
+.appliance-select>span{width:30px;height:30px;display:grid;place-items:center;color:#fff;border-radius:3px;flex-shrink:0}.appliance-select b{font-size:11px;font-weight:600;flex:1}.appliance-select small{font-size:10px;color:#8a9878}
+.appliance-row-heading>.icon-button{padding:3px;min-width:24px;width:24px;height:26px;color:#999b86}
+.appliance-position{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:9px}
+.appliance-position label{display:block;min-width:0}.appliance-position label>span{font-size:8px;display:block;margin:0 0 4px;color:#839175}.appliance-position select{width:100%;padding:8px 7px;font-size:10px;background:#fffdf7;border:1px solid #d3d9c8;color:#536845;min-width:0}
+.add-appliances{padding:17px 0 20px;border-top:1px solid #d0d7c3}.add-appliances>.eyebrow{font-size:8px;margin-bottom:12px}.add-appliances>div{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.add-appliances button{display:flex;gap:8px;align-items:center;padding:11px 8px;background:#eeeede;border:1px solid #cbd2bd;color:#61764e;font-size:10px;text-align:left}.add-appliances button svg:last-child{margin-left:auto}.add-appliances button:hover{background:#dfe7d1;border-color:#8fa47a}
+.kitchen-action-status{display:flex;align-items:center;gap:8px;padding:12px;background:#e6edda;color:#58723e;font-size:10px;line-height:1.6}
+.kitchen-issues{background:#f5ecd8;border:1px solid #dfc895;padding:14px;margin-top:18px;color:#8b7140}.kitchen-issues>b{font-size:11px;font-weight:600}.kitchen-issues p{font-size:10px;line-height:1.6;margin:8px 0 0}
+.kitchen-editor>.button{width:100%;justify-content:space-between;margin-top:7px}.kitchen-save{margin:18px auto 5px;display:flex;align-items:center;gap:8px;font-size:10px}
+.kitchen-run-editor{margin:15px 0 24px;border-top:1px solid #ccd3bf}.kitchen-run-editor>div{padding:15px 0;border-bottom:1px solid #ccd3bf;display:flex;align-items:center;gap:12px}
+.run-letter{width:32px;height:32px;border:1px solid #b6c3a5;background:#e6ecda;display:grid;place-items:center;font-size:12px;color:#5a7445}.kitchen-run-editor>div>div{flex:1}.kitchen-run-editor b{display:block;font-size:11px;font-weight:600;color:#61784d}.kitchen-run-editor small{font-size:9px;color:#8a9979}.kitchen-run-editor .field{width:105px;margin:0}.kitchen-run-editor .field>span{display:none}.kitchen-run-editor .field input{width:100%;padding:9px;font-size:12px}
+.kitchen-restore{margin:0 4.8% 30px;padding:18px 22px;border:1px solid #bfc9ae;display:flex;align-items:center;gap:14px;background:#e8eddd;color:#5a7045;font-size:11px}.kitchen-restore>span{flex:1}.kitchen-restore>button{border:0;background:none;color:#526f39;font-weight:600;font-size:11px}
+.kitchen-inspiration-photo{position:relative;overflow:hidden}.kitchen-inspiration-photo>span{position:absolute;left:18px;bottom:17px;font-size:7px;letter-spacing:1.4px;padding:8px 11px;color:#f7f4e8;background:#263b27aa}.kitchen-card-info .kitchen-run-note{display:block;color:#7f8e70;margin-top:10px;font-size:9px}
+.kitchen-quote-plan{font:10px/1.8 Manrope,Arial,sans-serif;white-space:pre-wrap;color:#6f805b}
+@media(max-width:1000px){.advanced-kitchen .kitchen-preview-sticky{position:static}.advanced-kitchen .kitchen-design-preview .detailed-kitchen{height:auto;max-height:500px}.advanced-kitchen .kitchen-design-preview .detailed-kitchen[data-view=walls]{max-height:650px}.advanced-kitchen .kitchen-editor{padding:28px}.appliance-list{grid-template-columns:1fr 1fr}.advanced-kitchen .kitchen-design-preview{padding:24px!important}.kitchen-module-strip>button{min-width:65px}}
+@media(max-width:600px){.advanced-kitchen .kitchen-editor{padding:24px 17px}.advanced-kitchen .kitchen-design-preview{padding:16px!important}.advanced-kitchen .kitchen-view-tabs{display:grid;grid-template-columns:1fr 1fr;gap:0}.advanced-kitchen .kitchen-view-tabs>button{padding:10px 6px;font-size:9px}.kitchen-wall-tabs{gap:5px}.kitchen-wall-tabs>button{padding:7px 9px;gap:6px}.kitchen-wall-tabs b{font-size:9px}.kitchen-wall-tabs small{font-size:8px}.advanced-kitchen .kitchen-design-preview .detailed-kitchen{height:auto;max-height:340px;min-height:230px}.advanced-kitchen .kitchen-design-preview .detailed-kitchen[data-view=walls]{min-height:0;max-height:400px}.kitchen-module-strip>button{min-width:56px}.kitchen-move-help{font-size:9px;align-items:start;text-align:center}.kitchen-editor-tabs>button{font-size:9px;padding:12px 4px}.appliance-list{grid-template-columns:1fr}.appliance-select b{font-size:12px}.appliance-position select{padding:10px;font-size:11px}.appliance-position label>span{font-size:9px}.appliance-list>article{padding:13px}.add-appliances button{font-size:10px;padding:12px 9px}.kitchen-editor .price-summary strong{font-size:30px}.kitchen-restore{flex-wrap:wrap;padding:16px;font-size:10px}.kitchen-restore>span{flex-basis:80%}.kitchen-restore>button{padding-left:32px}.kitchen-inspiration-photo>span{font-size:6px;left:12px;bottom:12px}}
+
+.kitchen-expand{display:flex;align-items:center;justify-content:center;gap:7px;font-size:9px;margin:4px auto 15px;color:#687d51}.kitchen-expanded .detailed-kitchen{width:100%;height:68vh;max-width:none;max-height:none}.kitchen-expanded .kitchen-svg{margin:0}
+
+.kitchen-inspiration-photo>.product-model-image{width:100%;height:400px}.kitchen-inspiration-photo{background:#e9e3d9}@media(max-width:600px){.kitchen-inspiration-photo>.product-model-image{height:320px}}
