@@ -92,7 +92,7 @@ export function removeAppliance(k:Kitchen,id:string):Kitchen{
  const next=normalizeKitchen(k),app=next.appliances!.find(a=>a.id===id);
  return {...next,hood:app?.kind==='hood'?'Без аспиратор':next.hood,appliances:next.appliances!.filter(a=>a.id!==id)};
 }
-/** Occupied slots exchange whole modules, so an oven/hob/hood stack stays intact. */
+
 export function exchangeModules(k:Kitchen,id:string,runId:RunId,slot:number):Kitchen{
  const next=normalizeKitchen(k),source=next.appliances!.find(a=>a.id===id),target=kitchenRuns(next).find(r=>r.id===runId);
  if(!source||!target||slot<0||slot>=target.modules||!Number.isInteger(slot))throw new Error('Избери съществуващ модул за размяната.');
@@ -107,7 +107,6 @@ export function changeKitchenGeometry(k:Kitchen,patch:Partial<Kitchen>):Kitchen{
  const old=normalizeKitchen(k),candidate={...old,...patch};
  if(patch.length!==undefined)candidate.runs=old.runs!.map(r=>r.id==='a'?{...r,length:patch.length!}:r);
  const runs=kitchenRuns(candidate),placed:Appliance[]=[];
- // Prefer current addresses; re-home appliances only if a wall disappeared or became too short.
  for(const app of old.appliances!){
   const test={...candidate,appliances:placed},run=runs.find(r=>r.id===app.runId);
   let target=run&&app.slot<run.modules&&canPlace(test,app.kind,app.runId,app.slot)?{runId:app.runId,slot:app.slot}:null;

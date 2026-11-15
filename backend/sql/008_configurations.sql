@@ -1,4 +1,3 @@
--- 008: Saved customer furniture designs.
 CREATE TABLE IF NOT EXISTS fp_configurations (
     id VARCHAR(80) PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE RESTRICT,

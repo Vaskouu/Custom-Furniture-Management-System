@@ -2,7 +2,7 @@ import {Product,imageUrl} from '../../data';
 import {atlasTile} from './media';
 import {useDecorations} from './Decorations';
 
-/** Each atlas tile is a separate, reviewed model photograph-style visualization. */
+
 export default function ProductImage({product,source,label,decorations}:{product?:Product;source?:string;label?:string;decorations?:boolean}){
  const shared=useDecorations(),styled=decorations??shared.decorations;
  const src=source||(!styled&&product?.cleanImage?product.cleanImage:product?.image)||'',tile=atlasTile(src);

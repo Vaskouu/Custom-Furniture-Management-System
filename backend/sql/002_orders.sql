@@ -1,4 +1,3 @@
--- 002: Furniture orders belonging to clients.
 CREATE TABLE IF NOT EXISTS orders (
     id SERIAL PRIMARY KEY,
     customer_id INTEGER NOT NULL REFERENCES customers(id),

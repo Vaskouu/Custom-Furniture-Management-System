@@ -1,4 +1,3 @@
--- 010: Settings, portfolio and additional studio fields.
 CREATE TABLE IF NOT EXISTS fp_resources (
     id SERIAL PRIMARY KEY,
     kind VARCHAR(30) NOT NULL,

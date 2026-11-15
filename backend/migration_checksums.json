@@ -1,0 +1,42 @@
+{
+  "001_customers.sql": {
+    "before": "f3c1e3ea3cf64ce03b7ba41d36d160eeab5c7dd42d1dfd5e59f1de191466f927",
+    "after": "b1c324b572729a6dc617ead76c1f1205294954225160e89956adc841af9d51ea"
+  },
+  "002_orders.sql": {
+    "before": "e1cb691c4ec960a6db932137adabd4485146d0d32263adcfcfcb58e4dcfa0375",
+    "after": "dea4efa255ffbfc262070d8f77332db15f020adc770b8d29e67f91c3ddd631c6"
+  },
+  "006_user_profiles.sql": {
+    "before": "934154b8d3cc4b091c7342b753e527af452a55a4da3e4f225f44a7d632db947f",
+    "after": "8229c47c125f69d609860f2f33dd85b85c8d61dc891e9877d3d89beaba84404f"
+  },
+  "007_products.sql": {
+    "before": "01664818aaf1cb8a676904941533f087ea6659e16783da16b9d0865adc208500",
+    "after": "771d3f45d79b3de326c90911b39edfb73d63705a8d10223db1b4c8199cbecb07"
+  },
+  "008_configurations.sql": {
+    "before": "459069b9c37eb14790e88eb4c3bc5e1fd05853f0c2a54855073b9bb1332a0d01",
+    "after": "4403d6d2a06516140d7c23c9f048388ed9b1a6eb869432c5e9d510fc56873514"
+  },
+  "009_inquiries.sql": {
+    "before": "e2c09da705adc5bb55cd4df272b324a26686d81a29b441b1c4730d0c45cd20e6",
+    "after": "0040601998a84175d88e7418dd41433603e62f71fe927f1dbf4ada5606906f28"
+  },
+  "010_resources.sql": {
+    "before": "7fcf3bc6b0d8603da76f65d0fc3a7c77bcd48c740d91fcf75ece6d24fa521199",
+    "after": "cb9bdd532d45419304700ad4004cfa934eb83c3450814117ceeb2cd66eec3766"
+  },
+  "011_audit.sql": {
+    "before": "7b1997f6f4dc0878a9868b73492f586ea466d45e3e6750be0c65887d30f4c438",
+    "after": "7465b52ca9e3ac8a37ab4583ce57b845e57d8977bbbc3e07d62445b238d3fd3c"
+  },
+  "012_order_links.sql": {
+    "before": "d5fc6fd358b923b791576184909b32610cd76e7da97871d3cbdbad0cb863cca5",
+    "after": "bf940e7e63c7b440f64dd168c5c8ef7db9e66d80a0d4d55850e577b7a871841f"
+  },
+  "013_account_favorites.sql": {
+    "before": "b3219a4e037ca720623e40414a32912e351ae8a811eaebc9e48cbfe0ac2bb666",
+    "after": "15d5f365edbe2149367fd257d0d3a9e3223f8400afbc99aabc4805ff601c8fa4"
+  }
+}

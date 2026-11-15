@@ -1,4 +1,3 @@
-"""Count physical source lines, including blank lines and tests, without dependencies."""
 from pathlib import Path
 import os
 

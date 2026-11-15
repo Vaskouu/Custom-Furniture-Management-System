@@ -3,7 +3,7 @@ import {shade} from './model';
 
 type Props={c:Config;X:number;Y:number;W:number;H:number;id:string;color:string;fill:string;edge:string;variant?:string};
 
-/** All bed variants share a centered, one-point perspective and paired details. */
+
 export default function BedModel({c,X,Y,W,H,id,color,fill,edge,variant='bed-panel'}:Props){
  const center=X+W/2,storage=variant.endsWith('storage'),arch=variant.endsWith('arch');
  const rearY=Y+H*.48,frontY=Y+H-19,depth=frontY-rearY;

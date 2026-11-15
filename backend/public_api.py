@@ -1,4 +1,3 @@
-"""Public website API using existing accounts and additive fp_* tables."""
 from __future__ import annotations
 import os, json, uuid, secrets, base64
 from datetime import datetime, timedelta, timezone
@@ -75,7 +74,6 @@ class Audit(Base):
     target: Mapped[str] = mapped_column(String(100))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 class OrderLink(Base):
-    """Additive extension for the existing orders table; no automatic legacy writes."""
     __tablename__ = 'fp_order_links'
     id: Mapped[int] = mapped_column(primary_key=True)
     legacy_order_id: Mapped[int] = mapped_column(Integer, unique=True)
@@ -84,7 +82,6 @@ class OrderLink(Base):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # PostgreSQL structure is maintained by the numbered backend/sql migrations.
     initialize()
     yield
 app = FastAPI(title='FurniPro website API', version='2.0.0', lifespan=lifespan, docs_url='/api/docs', openapi_url='/api/openapi.json')
@@ -171,7 +168,6 @@ def register(data:Register,response:Response,session:Session=Depends(db)):
 @app.post('/api/auth/login')
 def login(data:Login,response:Response,session:Session=Depends(db)):
     u=session.scalar(select(User).where((func.lower(User.email)==data.email.lower()) | (func.lower(User.username)==data.email.lower())))
-    # Always perform a password verification to reduce account enumeration.
     ok=passwords.verify(data.password,u.password_hash if u else passwords.hash('dummy-password-no-account'))
     if not u or not u.active or not ok: raise HTTPException(401,'Невалиден имейл или парола.')
     cookie(response,u);return user_json(u)
@@ -385,9 +381,7 @@ def resource_delete(kind:str,rid:str,user=Depends(admin),session:Session=Depends
 
 
 def initialize():
-    """Apply SQL migrations, then import initial data once."""
     if engine.dialect.name == 'sqlite' and os.environ.get('FURNIPRO_TESTING') == '1':
-        # Only the isolated SQLite API tests use ORM schema creation.
         Base.metadata.create_all(engine)
         from schema import initialize_legacy
         initialize_legacy(engine)

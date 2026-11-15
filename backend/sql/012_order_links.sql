@@ -1,5 +1,3 @@
--- 012: Reserved link between an inquiry and an existing order.
--- The current interface creates orders separately; this link is not populated yet.
 CREATE TABLE IF NOT EXISTS fp_order_links (
     id SERIAL PRIMARY KEY,
     legacy_order_id INTEGER NOT NULL UNIQUE,

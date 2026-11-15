@@ -1,4 +1,3 @@
-"""SQLite API-test fixture only. PostgreSQL uses the files in backend/sql."""
 from sqlalchemy import MetaData, Table, Column, Integer, String, Text, Numeric, ForeignKey, DateTime, func
 
 

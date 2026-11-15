@@ -1,4 +1,3 @@
-"""Local setup. Existing users and edited catalog records are preserved."""
 import argparse
 from getpass import getpass
 from sqlalchemy import select

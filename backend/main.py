@@ -972,5 +972,4 @@ def create_user(
 
 
 
-# Public website and studio routes extend the original CRUD API.
 app.mount("/", public_api.app)

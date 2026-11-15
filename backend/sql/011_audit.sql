@@ -1,4 +1,3 @@
--- 011: Recorded actions.
 CREATE TABLE IF NOT EXISTS fp_audit (
     id SERIAL PRIMARY KEY,
     actor_id INTEGER NOT NULL REFERENCES users(id) ON DELETE RESTRICT,

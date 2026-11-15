@@ -54,8 +54,6 @@ export default function KitchenScene({k,view='front',runId='a',selectedId,onSlot
     </g>;
    })}
    {k.light&&!island&&entries.map(({slot,index})=>{
-    // The same module-aware lighting is used in front, upper and all-walls views.
-    // A fridge has no upper cabinet; hoods provide their own task lighting.
     if(at(apps,run.id,slot).some(a=>a.kind==='fridge'||a.kind==='hood'))return null;
     const left=x+index*unit+4,lightY=uy+uh+10,clipId=`${id}-light-${run.id}-${slot}`;
     return <g key={slot} data-led-run={run.id} data-led-slot={slot}>

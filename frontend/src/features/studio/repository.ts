@@ -1,9 +1,7 @@
 import {api,DEMO,readLocal,writeLocal} from '../../api';
 import {StudioState} from './types';
 import {demoStudioState} from './demoData';
-/** This adapter is intentionally independent of the existing FastAPI backend.
- * Integrators can inject an implementation after mapping their existing DTOs.
- * No assumed endpoints, database writes or browser-stored real credentials. */
+
 export interface StudioRepository { readonly mode:'demo'|'api'; load():Promise<StudioState>; save(state:StudioState):Promise<void>; }
 export const demoRepository:StudioRepository={
  mode:'demo',

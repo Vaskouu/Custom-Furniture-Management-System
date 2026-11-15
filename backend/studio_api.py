@@ -1,4 +1,3 @@
-"""Studio DTO adapter over the original customers/orders/materials/users tables."""
 import json
 from datetime import datetime, timezone
 from typing import Literal
@@ -147,7 +146,6 @@ def validate_order(row, snapshot):
 def mutate(kind: str, ident: str, change: Mutation, user=Depends(staff), session=Depends(db)):
     if kind not in KINDS:
         raise HTTPException(404)
-    # Serialize stock reservations between studio requests in PostgreSQL.
     if session.bind.dialect.name == 'postgresql':
         session.execute(text('SELECT pg_advisory_xact_lock(736291)'))
     snapshot = state(session)
@@ -174,7 +172,6 @@ def mutate(kind: str, ident: str, change: Mutation, user=Depends(staff), session
             raise HTTPException(409, 'Записът се използва и не може да бъде изтрит.')
     elif kind=='orders':
         validate_order(row, snapshot)
-        # The server owns history; clients supply only the latest note.
         history = old['history'][:] if old else []
         if not old or row['status']!=old['status'] or row['history']!=history:
             note = str(row['history'][-1].get('note',''))[:5000] if row['history'] else ''

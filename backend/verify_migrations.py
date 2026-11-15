@@ -1,8 +1,3 @@
-"""Verify real PostgreSQL migrations in an isolated, disposable schema.
-
-Run: .venv/Scripts/python.exe verify_migrations.py
-Uses the configured database, but creates/drops only its own random test schema.
-"""
 import re
 import shutil
 import tempfile
@@ -24,6 +19,9 @@ def main():
     try:
         assert len(migrations.migrate(test_engine)) == 13
         assert len(inspect(test_engine).get_table_names()) == 13
+        with test_engine.begin() as connection:
+            for filename, upgrade in migrations.CHECKSUM_UPGRADES.items():
+                connection.execute(text('UPDATE schema_migrations SET checksum=:checksum WHERE filename=:filename'), {'filename': filename, 'checksum': upgrade['before']})
         with test_engine.begin() as connection:
             connection.execute(text("INSERT INTO customers(name,phone,email) VALUES ('Test client','1234567','test@example.com')"))
         assert migrations.migrate(test_engine) == []
@@ -57,7 +55,6 @@ def main():
         migrations.SQL_DIRECTORY = original_directory
         test_engine.dispose()
         with engine.begin() as connection:
-            # This is the generated schema created above, never public.
             connection.exec_driver_sql(f'DROP SCHEMA {name} CASCADE')
 
 

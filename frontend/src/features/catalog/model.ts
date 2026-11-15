@@ -1,7 +1,7 @@
 import {Config, Product, newConfig,limits} from '../../data';
 import {atlasTile} from './media';
 
-/** Named dimensions are used everywhere; UI order is width × depth × height. */
+
 export type SizeOption = {id:string;w:number;d:number;h:number;label?:string};
 export const sizeText=(size:Pick<SizeOption,'w'|'d'|'h'>)=>`${size.w} × ${size.d} × ${size.h} см`;
 export function sizeOptions(product:Product):SizeOption[]{

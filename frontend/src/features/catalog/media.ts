@@ -9,7 +9,7 @@ export function atlasTile(value:string){
 }
 export const studioPhoto=(index:number)=>`/assets/products/collection-${String(Math.floor(index/9)+1).padStart(2,'0')}.png#cell=${index%9}`;
 
-/** Upgrade only the original stock assets, preserving admin-uploaded replacements and edits. */
+
 export function refreshDemoPhotos(catalog:Product[],current:Product[],originalImages:Record<string,string>,previousDefaults:Record<string,Partial<Product>>={}):Product[]{
  return catalog.map(p=>{const seed=current.find(x=>x.id===p.id);if(!seed)return p;const stock=originalImages[p.id]===p.image||/^\/assets\/products\/collection-0[1-4]\.png#cell=[0-8]$/.test(p.image);const changes=Object.fromEntries(Object.entries(previousDefaults[p.id]||{}).filter(([key,value])=>p[key as keyof Product]===value).map(([key])=>[key,seed[key as keyof Product]]));return stock?{...p,...changes,image:seed.image,cleanImage:seed.cleanImage,variant:p.variant||seed.variant,decorationTheme:seed.decorationTheme}:p;});
 }

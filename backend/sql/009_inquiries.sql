@@ -1,4 +1,3 @@
--- 009: Guest/customer inquiries and private staff notes.
 CREATE TABLE IF NOT EXISTS fp_inquiries (
     id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(id) ON DELETE RESTRICT,

@@ -161,7 +161,6 @@ def test_studio_persists_legacy_rows_and_enforces_stock_and_permissions():
         assert save('orders',changed,order).status_code==200
         order=next(x for x in c.get('/api/studio/state').json()['orders'] if x['id']==order['id'])
         assert save('orders',{**order,'amount':1},order).status_code==403
-        # Both login contracts use the same user and password hash.
         old_login=c.post('/auth/login',json={'username':'test_worker','password':'worker-long-password'})
         assert old_login.status_code==200
         assert c.get('/orders',headers={'Authorization':'Bearer '+old_login.json()['access_token']}).status_code==200

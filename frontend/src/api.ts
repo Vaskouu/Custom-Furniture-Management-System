@@ -1,4 +1,3 @@
-/// <reference types="vite/client" />
 export const DEMO=import.meta.env.VITE_DEMO==='true';
 export const API_URL=(import.meta.env.VITE_API_URL||(typeof window==='undefined'?'http://localhost:5173':window.location.origin)).replace(/\/$/,'');
 export async function api<T>(path:string,init:RequestInit={}):Promise<T>{
@@ -18,7 +17,7 @@ export async function api<T>(path:string,init:RequestInit={}):Promise<T>{
         const field=body.detail[0]?.loc?.at(-1);
         message=labels[field]?`Провери полето „${labels[field]}“ и въведи валидна стойност.`:'Провери въведените данни.';
       }
-    } catch { /* Keep the readable fallback for non-JSON responses. */ }
+    } catch {  }
     throw new Error(message);
   }
   return response.status===204?undefined as T:response.json();
